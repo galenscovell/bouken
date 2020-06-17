@@ -16,6 +16,13 @@ Postgres - Save serialized results and metadata, tied to unique seed ID
 
 
 
+Need to parse events from the following and map them to stats, proficiencies and outcomes:
+    https://old.reddit.com/r/d100/comments/7mg1vd/lets_build_side_quest_hooks/
+    https://archive.org/stream/tsr09234dungeonmastersdesignkit/tsr09234%20-%20Dungeon%20Master%27s%20Design%20Kit_djvu.txt
+    https://donjon.bin.sh/fantasy/adventure/
+
+
+
     
 MVP -
     * Frontend takes in specific parameters: team size, average level, number of areas
