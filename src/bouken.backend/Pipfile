@@ -11,6 +11,9 @@ uvicorn = "*"
 requests = "*"
 starlette = "*"
 redis = "*"
+numpy = "*"
+matplotlib = "*"
+scipy = "*"
 
 
 [requires]
