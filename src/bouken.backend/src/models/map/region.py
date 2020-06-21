@@ -1,7 +1,3 @@
-"""
-Defines a region of a map.
-"""
-
 from __future__ import annotations
 
 from typing import List
@@ -10,11 +6,14 @@ from src.models.map.point import Point
 
 
 class Region(object):
-    def __init__(self, center: Point, vertices: List[Point], neighbors: List[Region]):
-        self.root_point: Point = center
-        self.vertices: List[Point] = vertices
-        self.neighbors = neighbors
-        self.area = self.get_area()
+    """
+    Defines a region of a map.
+    """
+    def __init__(self, center: Point, vertices: List[Point]):
+        self.center: Point = center
+        self.vertices: List[Point] = vertices  # In order by connection (0->1, 1->2, ... n->0)
+        self.area: float = self.get_area()
+        self.neighbors: List[Region] = []
 
     def get_area(self) -> float:
         """
