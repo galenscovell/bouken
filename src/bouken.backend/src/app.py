@@ -89,6 +89,5 @@ def create(db=Depends(db_dependency)):
 
 
 if __name__ == '__main__':
-    map_gen = MapGenerator()
-    map_gen.generate_overworld(200, 200, 16, 3)
+    map_gen = MapGenerator(80, 80, 16, 12)
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')
