@@ -9,18 +9,26 @@ class Hex(object):
     """
     Defines a single, flat-topped Hex cell.
     """
-    def __init__(self, col: int, row: int, radius: float):
+    def __init__(self, col: int, row: int, size: float, pointy: bool):
         assert ((col + row) % 2 == 0), f'Hex col and row must sum to an even number (found {col}, {row})'
         self.col: int = col
         self.row: int = row
-        self.radius: float = radius
+        self.size: float = size
+        self.pointy: bool = pointy
 
-        self.width: float = 2 * self.radius * 2
-        self.height: float = math.sqrt(3) * self.radius
-        self.horizontal_spacing: float = 0.75 * self.width
-        self.vertical_spacing: float = self.height
+        self.width_diameter: float = math.sqrt(3) * self.size if self.pointy else 2 * self.size
+        self.width_radius: float = self.width_diameter / 2
 
-        self.pixel_center: Point = Point(self.col * self.horizontal_spacing, self.row * self.vertical_spacing)
+        self.height_diameter: float = 2 * self.size if self.pointy else math.sqrt(3) * self.size
+        self.height_radius: float = self.height_diameter / 2
+
+        self.vertical_spacing: float = self.height_diameter * (3/4) if self.pointy else self.height_diameter / 2
+        self.horizontal_spacing: float = self.width_diameter / 2 if self.pointy else self.width_diameter * (3 / 4)
+
+        self.pixel_center: Point = Point(
+            self.width_radius + self.col * self.horizontal_spacing,
+            self.height_radius + self.row * self.vertical_spacing
+        )
 
         # Define points of hex cell, connected in order
         self.vertices: List[Tuple[float, float]] = [self._calculate_hex_corner(i) for i in range(6)]
@@ -40,10 +48,10 @@ class Hex(object):
             return self.vertices[vertex_index + 1]
 
     def _calculate_hex_corner(self, i) -> Tuple[float, float]:
-        angle_deg = 60 * i  # - 30 for "pointy top" hexes
+        angle_deg = 60 * i - 30  # for "pointy top" hexes
 
         angle_rad = (math.pi / 180) * angle_deg
-        vertex_x = self.pixel_center.x + self.radius * math.cos(angle_rad)
-        vertex_y = self.pixel_center.y + self.radius * math.sin(angle_rad)
+        vertex_x = self.pixel_center.x + self.size * math.cos(angle_rad)
+        vertex_y = self.pixel_center.y + self.size * math.sin(angle_rad)
 
         return vertex_x, vertex_y

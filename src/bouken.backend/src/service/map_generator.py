@@ -5,16 +5,12 @@ from src.models.map.grid import Grid
 
 
 class MapGenerator:
-    """
-    Map generation tool.
-    """
-
     def __init__(self, pixel_width: int, pixel_height: int, cell_size: int, iterations: int):
         self.pixel_width: int = pixel_width
         self.pixel_height: int = pixel_height
         self.hex_diameter: int = cell_size
         self.iterations: int = iterations
 
-        self.grid: Grid = Grid(self.pixel_width, self.pixel_height, self.hex_diameter)
+        self.grid: Grid = Grid(self.pixel_width, self.pixel_height, self.hex_diameter, True)
 
         self.grid.display()
