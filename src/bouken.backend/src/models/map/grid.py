@@ -1,8 +1,10 @@
 import math
 import random
-from typing import List, Tuple
+import sys
 
-import matplotlib.pyplot as plt
+import pygame
+
+from typing import List
 
 from src.models.map.hex import Hex
 
@@ -15,7 +17,7 @@ class Grid(object):
     _corners = ((1, 1), (0, 2), (-1, 1), (-1, -1), (0, -2), (1, -1))
     _neighbours = ((2, 0), (1, 1), (-1, 1), (-2, 0), (-1, -1), (1, -1))
 
-    def __init__(self, pixel_width: int, pixel_height: int, hex_size: int, pointy: bool):
+    def __init__(self, pixel_width: int, hex_size: int, pointy: bool):
         self.pixel_width: int = pixel_width
         self.pixel_height: int = round(math.sqrt(1 / 3) * self.pixel_width)
         self.pointy: bool = pointy
@@ -48,6 +50,12 @@ class Grid(object):
             for row in range(1, self.rows, 2):
                 self.grid[col][row] = Hex(row, col, self.hex_size, self.pointy)
 
+        final_cell: Hex = self.grid[-1][-1]
+        if not final_cell:
+            final_cell = self.grid[-1][-2]
+        self.actual_width: int = round(final_cell.pixel_center.x + self.width_diameter)
+        self.actual_height: int = round(final_cell.pixel_center.y + self.height_diameter)
+
     def corners(self, h: Hex):
         """
         Get the 6 corners (in pixel coordinates) of the hex.
@@ -78,20 +86,35 @@ class Grid(object):
         dx, dy = self.rdm.choice(self._neighbours)
         return self.grid[h.col + dx][h.row + dy]
 
-    def display(self):
-        for col in range(self.columns):
-            for row in range(self.rows):
-                cell: Hex = self.grid[col][row]
-                if cell:
-                    plt.plot(cell.pixel_center.x, cell.pixel_center.y, 'go', ms=3, alpha=0.6)
-                    # plt.annotate(xy=[cell.pixel_center.x, cell.pixel_center.y], s=str(cell))
+    def test_display(self):
+        framerate = 12
+        background_color = (52, 73, 94)
+        default_hex_color = (44, 62, 80)
 
-                    for n in range(len(cell.vertices)):
-                        v1: Tuple[float, float] = cell.vertices[n]
-                        v2: Tuple[float, float] = cell.get_connecting_vertex(n)
-                        plt.plot([v1[0], v2[0]], [v1[1], v2[1]], '--b', linewidth=1, alpha=0.6)
+        pygame.init()
+        screen = pygame.display.set_mode((self.actual_width, self.actual_height))
+        pygame.display.set_caption('Bouken Test Display')
 
-        # plt.xlim([0, self.pixel_width])
-        # plt.ylim([0, self.pixel_height])
-        plt.show()
-        print('debug')
+        clock = pygame.time.Clock()
+        screen.fill(background_color)
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    None
+
+            for col in range(self.columns):
+                for row in range(self.rows):
+                    cell: Hex = self.grid[col][row]
+                    if cell:
+                        pygame.draw.polygon(screen, default_hex_color, cell.vertices)
+                        pygame.draw.lines(screen, background_color, True, cell.vertices)
+
+            pygame.display.flip()
+            clock.tick(framerate)
+
+        pygame.quit()
+        sys.exit()

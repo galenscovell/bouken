@@ -11,9 +11,7 @@ uvicorn = "*"
 requests = "*"
 starlette = "*"
 redis = "*"
-numpy = "*"
-matplotlib = "*"
-scipy = "*"
+pygame = "*"
 
 [requires]
 python_version = "3.8"
