@@ -10,6 +10,6 @@ class MapGenerator:
         self.hex_diameter: int = cell_size
         self.iterations: int = iterations
 
-        self.grid: Grid = Grid(self.pixel_width, self.hex_diameter, True)
+        self.grid: Grid = Grid(self.pixel_width, self.hex_diameter, False)
 
         self.grid.test_display()

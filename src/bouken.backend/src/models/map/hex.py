@@ -1,57 +1,45 @@
 from typing import List, Tuple
 
-import math
-
-from src.models.map.point import Point
+from src.models.map.hex_state import HexState
+from src.util.hex_utils import HexUtils
 
 
 class Hex(object):
     """
     Defines a single, flat-topped Hex cell.
     """
-    def __init__(self, col: int, row: int, size: float, pointy: bool):
-        assert ((col + row) % 2 == 0), f'Hex col and row must sum to an even number (found {col}, {row})'
-        self.col: int = col
-        self.row: int = row
-        self.size: float = size
-        self.pointy: bool = pointy
+    def __init__(self, x: int, y: int, size: int, pointy: bool):
+        assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
+        self.x: int = x
+        self.y: int = y
 
-        self.width_diameter: float = math.sqrt(3) * self.size if self.pointy else 2 * self.size
-        self.width_radius: float = self.width_diameter / 2
+        self.width_diameter, self.height_diameter, self.vertical_spacing, self.horizontal_spacing = \
+            HexUtils.calculate_layout(size, pointy)
 
-        self.height_diameter: float = 2 * self.size if self.pointy else math.sqrt(3) * self.size
-        self.height_radius: float = self.height_diameter / 2
+        self.width_radius: int = int(self.width_diameter / 2)
+        self.height_radius: int = int(self.height_diameter / 2)
 
-        self.vertical_spacing: float = self.height_diameter * (3/4) if self.pointy else self.height_diameter / 2
-        self.horizontal_spacing: float = self.width_diameter / 2 if self.pointy else self.width_diameter * (3 / 4)
-
-        self.pixel_center: Point = Point(
-            self.width_radius + self.col * self.horizontal_spacing,
-            self.height_radius + self.row * self.vertical_spacing
-        )
+        self.pixel_center_x: int = self.width_radius + self.x * self.horizontal_spacing
+        self.pixel_center_y: int = self.height_radius + self.y * self.vertical_spacing
 
         # Define points of hex cell, connected in order
-        self.vertices: List[Tuple[float, float]] = [self._calculate_hex_corner(i) for i in range(6)]
+        self.vertices: List[Tuple[int, int]] = HexUtils.calculate_hex_corners(self.pixel_center_x, self.pixel_center_y, size, pointy)
+
+        self.state: HexState = HexState.Empty
 
     def __str__(self) -> str:
-        return f'[{self.col}, {self.row}]'
+        return f'[{self.x}, {self.y}]'
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Hex):
-            return self.col == other.col and self.row == other.row
+            return self.x == other.x and self.y == other.y
         return False
 
-    def get_connecting_vertex(self, vertex_index: int) -> Tuple[float, float]:
+    def get_connecting_vertex(self, vertex_index: int) -> Tuple[int, int]:
         if vertex_index == len(self.vertices) - 1:
             return self.vertices[0]
         else:
             return self.vertices[vertex_index + 1]
 
-    def _calculate_hex_corner(self, i) -> Tuple[float, float]:
-        angle_deg = 60 * i - 30  # for "pointy top" hexes
-
-        angle_rad = (math.pi / 180) * angle_deg
-        vertex_x = self.pixel_center.x + self.size * math.cos(angle_rad)
-        vertex_y = self.pixel_center.y + self.size * math.sin(angle_rad)
-
-        return vertex_x, vertex_y
+    def set_state(self, state: HexState):
+        self.state = state
