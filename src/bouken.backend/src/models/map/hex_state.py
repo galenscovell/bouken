@@ -1,8 +1,10 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class HexState(Enum):
-    Empty = 0
-    Selected = 1
-    Land = 2
-    Water = 3
+class HexState(IntEnum):
+    Land = 0
+    Forest = 1
+    Desert = 2
+    Coast = 3
+    Shallows = 4
+    Depths = 5

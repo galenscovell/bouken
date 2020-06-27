@@ -1,3 +1,4 @@
+from random import Random
 from typing import List, Tuple
 
 from src.models.map.hex_state import HexState
@@ -23,9 +24,19 @@ class Hex(object):
         self.pixel_center_y: int = self.height_radius + self.y * self.vertical_spacing
 
         # Define points of hex cell, connected in order
-        self.vertices: List[Tuple[int, int]] = HexUtils.calculate_hex_corners(self.pixel_center_x, self.pixel_center_y, size, pointy)
+        self.vertices: List[Tuple[int, int]] = HexUtils.calculate_hex_corners(
+            self.pixel_center_x, self.pixel_center_y, size, pointy)
 
-        self.state: HexState = HexState.Empty
+        self.direct_neighbors: List[Hex] = []
+        self.secondary_neighbors: List[Hex] = []
+        self.total: List[HexState] = []
+        self.direct: List[HexState] = []
+        self.secondary: List[HexState] = []
+
+        self.state: HexState = HexState.Land
+
+        self.state_options: List[HexState] = [
+            HexState.Land, HexState.Forest, HexState.Desert, HexState.Coast, HexState.Shallows, HexState.Depths]
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
@@ -41,5 +52,57 @@ class Hex(object):
         else:
             return self.vertices[vertex_index + 1]
 
-    def set_state(self, state: HexState):
-        self.state = state
+    def set_random_state(self, rdm: Random):
+        self.set_shallows()
+        r: float = rdm.uniform(0, 100)
+        if r >= 72:
+            self.set_land()
+
+    def set_neighbor_states(self):
+        self.direct = [0 for s in self.state_options]
+        for h in self.direct_neighbors:
+            if h:
+                self.direct[h.state] += 1
+
+        self.secondary = [0 for s in self.state_options]
+        for h in self.secondary_neighbors:
+            if h:
+                self.secondary[h.state] += 1
+
+        self.total = [self.direct[n] + self.secondary[n] for n in range(len(self.state_options))]
+
+    def set_land(self):
+        self.state = HexState.Land
+
+    def set_forest(self):
+        self.state = HexState.Forest
+
+    def set_desert(self):
+        self.state = HexState.Desert
+
+    def set_coast(self):
+        self.state = HexState.Coast
+
+    def set_shallows(self):
+        self.state = HexState.Shallows
+
+    def set_depths(self):
+        self.state = HexState.Depths
+
+    def is_land(self) -> bool:
+        return self.state == HexState.Land
+
+    def is_forest(self) -> bool:
+        return self.state == HexState.Forest
+
+    def is_desert(self) -> bool:
+        return self.state == HexState.Desert
+
+    def is_coast(self) -> bool:
+        return self.state == HexState.Coast
+
+    def is_shallows(self) -> bool:
+        return self.state == HexState.Shallows
+
+    def is_depths(self) -> bool:
+        return self.state == HexState.Depths

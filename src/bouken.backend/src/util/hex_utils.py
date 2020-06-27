@@ -21,11 +21,10 @@ class HexUtils(object):
                 angle_deg -= 30
 
             angle_rad = (math.pi / 180) * angle_deg
-            vertices.append(
-                (
-                    int(center_x + size * math.cos(angle_rad)),
-                    int(center_y + size * math.sin(angle_rad))
-                )
+            vertex: Tuple[int, int] = (
+                int(center_x + size * math.cos(angle_rad)),
+                int(center_y + size * math.sin(angle_rad))
             )
+            vertices.append(vertex)
 
         return vertices
