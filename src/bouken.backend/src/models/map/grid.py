@@ -4,7 +4,6 @@ import random
 from typing import List, Optional, Tuple
 
 from src.models.map.hex import Hex
-from src.models.map.hex_state import HexState
 from src.util.hex_utils import HexUtils
 
 
@@ -13,7 +12,6 @@ class Grid(object):
     Defines a grid of Hex cells, using Doubled Coordinates as offset.
     They can be either pointy or flat topped - calculations will shift accordingly.
     """
-
     def __init__(self, pixel_width: int, hex_size: int, pointy: bool):
         self.pixel_width: int = pixel_width
         self.pixel_height: int = round(math.sqrt(1 / 3) * self.pixel_width)
@@ -79,15 +77,6 @@ class Grid(object):
             return self.grid[xy[0]][xy[1]]
         return None
 
-    def _generator(self):
-        for x in range(self.columns):
-            for y in range(self.rows):
-                h: Hex = self[x, y]
-                if not h:
-                    continue
-
-                yield h
-
     def _set_direct_neighbors(self, h: Hex) -> List[Hex]:
         """
         Return the 6 direct neighbours of a hex.
@@ -100,55 +89,14 @@ class Grid(object):
         """
         return [self[h.x + dx, h.y + dy] for dx, dy in self.secondary_neighbors]
 
-    def reset(self):
-        [h.set_random_state(self.rdm) for h in self._generator()]
+    def generator(self):
+        for x in range(self.columns):
+            for y in range(self.rows):
+                h: Hex = self[x, y]
+                if not h:
+                    continue
 
-    def _update_states(self):
-        [h.set_neighbor_states() for h in self._generator()]
-
-    def terraform_land(self):
-        self._update_states()
-        for h in self._generator():
-            if not h.is_land() and h.total[HexState.Land] > 6:
-                h.set_land()
-
-    def terraform_water(self):
-        self._update_states()
-        for h in self._generator():
-            if h.is_land() and h.direct[HexState.Land] < 5:
-                h.set_shallows()
-            elif h.is_depths() and h.direct[HexState.Land] < 0:
-                h.set_shallows()
-
-    def cleanup(self):
-        self._update_states()
-        for h in self._generator():
-            if h.is_land():
-                if h.direct[HexState.Land] < 3:
-                    h.set_depths()
-                elif h.direct[HexState.Shallows] > 0:
-                    h.set_coast()
-            elif h.is_shallows() and h.direct[HexState.Depths] > 5 or h.direct[HexState.Shallows] > 5:
-                h.set_depths()
-            elif h.is_depths() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
-                h.set_shallows()
-
-    def terraform_forests(self):
-        for n in range(4):
-            self._update_states()
-            for h in self._generator():
-                if h.is_land() and h.total[HexState.Coast] == 0 and h.total[HexState.Shallows] == 0:
-                    if h.direct[HexState.Land] == 6:
-                        r: float = self.rdm.uniform(0, 100)
-                        if r >= 95:
-                            h.set_forest()
-                    elif h.direct[HexState.Forest] > 1:
-                        h.set_forest()
-
-        self._update_states()
-        for h in self._generator():
-            if h.is_forest() and h.total[HexState.Forest] < 4:
-                h.set_land()
+                yield h
 
     def random_neighbour(self, h: Hex) -> Optional[Hex]:
         """

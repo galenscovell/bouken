@@ -1,5 +1,8 @@
+import random
+
 from src.models.map.grid import Grid
 from src.models.map.hex import Hex
+from src.models.map.hex_state import HexState
 
 
 class MapGenerator:
@@ -9,8 +12,59 @@ class MapGenerator:
         self.iterations: int = iterations
 
         self.grid: Grid = Grid(self.pixel_width, self.hex_diameter, True)
+        self.rdm: random.Random = random.Random()
 
         self.test_display()
+
+    def reset(self):
+        [h.set_random_state(self.rdm) for h in self.grid.generator()]
+
+    def update_hex_states(self):
+        [h.set_neighbor_states() for h in self.grid.generator()]
+
+    def terraform_land(self):
+        self.update_hex_states()
+        for h in self.grid.generator():
+            if not h.is_land() and h.total[HexState.Land] > 6:
+                h.set_land()
+
+    def terraform_water(self):
+        self.update_hex_states()
+        for h in self.grid.generator():
+            if h.is_land() and h.direct[HexState.Land] < 5:
+                h.set_shallows()
+            elif h.is_depths() and h.direct[HexState.Land] < 0:
+                h.set_shallows()
+
+    def cleanup(self):
+        self.update_hex_states()
+        for h in self.grid.generator():
+            if h.is_land():
+                if h.direct[HexState.Land] < 3:
+                    h.set_depths()
+                elif h.direct[HexState.Shallows] > 0:
+                    h.set_coast()
+            elif h.is_shallows() and h.direct[HexState.Depths] > 5 or h.direct[HexState.Shallows] > 5:
+                h.set_depths()
+            elif h.is_depths() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
+                h.set_shallows()
+
+    def terraform_forests(self):
+        for n in range(4):
+            self.update_hex_states()
+            for h in self.grid.generator():
+                if h.is_land() and h.total[HexState.Coast] == 0 and h.total[HexState.Shallows] == 0:
+                    if h.direct[HexState.Land] == 6:
+                        r: float = self.grid.rdm.uniform(0, 100)
+                        if r >= 95:
+                            h.set_forest()
+                    elif h.direct[HexState.Forest] > 1:
+                        h.set_forest()
+
+        self.update_hex_states()
+        for h in self.grid.generator():
+            if h.is_forest() and h.total[HexState.Forest] < 4:
+                h.set_land()
 
     def test_display(self):
         import pygame
@@ -22,8 +76,7 @@ class MapGenerator:
 
         land_color = (6, 227, 97, 200)
         forest_color = (65, 195, 123, 200)
-        desert_color = (255, 255, 42, 200)
-        coast_color = (53, 194, 158, 200)
+        coast_color = (255, 255, 42, 200)
         shallows_color = (0, 99, 113, 200)
         depths_color = (0, 89, 114, 200)
 
@@ -45,17 +98,17 @@ class MapGenerator:
 
             terraform_tick -= 1
             if self.iterations > 0 and terraform_tick <= 0:
-                self.grid.terraform_land()
+                self.terraform_land()
                 terraform_tick = update_rate
                 self.iterations -= 1
 
                 if self.iterations == 0:
-                    self.grid.terraform_water()
-                    self.grid.cleanup()
-                    self.grid.terraform_forests()
+                    self.terraform_water()
+                    self.cleanup()
+                    self.terraform_forests()
             elif self.iterations == 0:
                 if reset_rate == 0:
-                    self.grid.reset()
+                    self.reset()
                     reset_rate = 100
                     self.iterations = 40
                 else:
@@ -74,9 +127,9 @@ class MapGenerator:
                         elif cell.is_forest():
                             color = forest_color
                         elif cell.is_desert():
-                            color = desert_color
+                            color = coast_color
                         elif cell.is_coast():
-                            color = desert_color
+                            color = coast_color
                         elif cell.is_shallows():
                             color = shallows_color
                         else:
