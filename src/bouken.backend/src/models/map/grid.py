@@ -133,6 +133,23 @@ class Grid(object):
             elif h.is_depths() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
                 h.set_shallows()
 
+    def terraform_forests(self):
+        for n in range(4):
+            self._update_states()
+            for h in self._generator():
+                if h.is_land() and h.total[HexState.Coast] == 0 and h.total[HexState.Shallows] == 0:
+                    if h.direct[HexState.Land] == 6:
+                        r: float = self.rdm.uniform(0, 100)
+                        if r >= 95:
+                            h.set_forest()
+                    elif h.direct[HexState.Forest] > 1:
+                        h.set_forest()
+
+        self._update_states()
+        for h in self._generator():
+            if h.is_forest() and h.total[HexState.Forest] < 4:
+                h.set_land()
+
     def random_neighbour(self, h: Hex) -> Optional[Hex]:
         """
         Return a random neighbour of a hex.

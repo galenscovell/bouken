@@ -18,13 +18,13 @@ class MapGenerator:
         frame_rate = 60
         update_rate = 3
         reset_rate = 100
-        background_color = (52, 73, 94)
+        background_color = (52, 73, 94, 200)
 
         land_color = (6, 227, 97, 200)
         forest_color = (65, 195, 123, 200)
         desert_color = (255, 255, 42, 200)
-        coast_color = (53, 194, 158)
-        shallows_color = (0, 99, 113)
+        coast_color = (53, 194, 158, 200)
+        shallows_color = (0, 99, 113, 200)
         depths_color = (0, 89, 114, 200)
 
         pygame.init()
@@ -52,6 +52,7 @@ class MapGenerator:
                 if self.iterations == 0:
                     self.grid.terraform_water()
                     self.grid.cleanup()
+                    self.grid.terraform_forests()
             elif self.iterations == 0:
                 if reset_rate == 0:
                     self.grid.reset()
@@ -75,7 +76,7 @@ class MapGenerator:
                         elif cell.is_desert():
                             color = desert_color
                         elif cell.is_coast():
-                            color = coast_color
+                            color = desert_color
                         elif cell.is_shallows():
                             color = shallows_color
                         else:
