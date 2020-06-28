@@ -14,8 +14,13 @@ class RegionLayer(HexGrid):
     """
     Defines region layer of a map, detailing the political regions on it.
     """
-    def __init__(self, island_layer: IslandLayer):
+    def __init__(self, island_layer: IslandLayer,
+                 min_region_expansions: int, max_region_expansions: int, min_region_size: int):
         super().__init__(island_layer._pixel_width, island_layer._hex_size, island_layer._pointy)
+
+        self.min_region_expansions: int = min_region_expansions
+        self.max_region_expansions: int = max_region_expansions
+        self.min_region_size: int = min_region_size
 
         # Get all island layer hexes
         self.usable_hexes: List[Hex] = []
@@ -46,7 +51,7 @@ class RegionLayer(HexGrid):
                 else:
                     region_color = (
                         self._random.randint(0, 255), self._random.randint(0, 255), self._random.randint(0, 255))
-                    region_expansions: int = self._random.randint(6, 9)
+                    region_expansions: int = self._random.randint(self.min_region_expansions, self.max_region_expansions)
                     new_region: Region = Region(random_h, region_color, region_expansions)
                     self.regions.append(new_region)
                     self.current_region = new_region
@@ -74,7 +79,7 @@ class RegionLayer(HexGrid):
         """
         to_remove: List[Region] = []
         for r in self.regions:
-            if len(r.hexes) < 8:
+            if len(r.hexes) < self.min_region_size:
                 to_remove.append(r)
 
         for r in to_remove:

@@ -4,7 +4,7 @@ from pygame.surface import Surface
 
 from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_islands import IslandLayer
-from src.processing.map.layer_region import RegionLayer
+from src.processing.map.layer_regions import RegionLayer
 from src.util.constants import background_color, update_rate, frame_rate
 
 
@@ -12,10 +12,16 @@ class MapGenerator:
     """
     Procedurally generates hexagon-based maps composed of land formations and political regions.
     """
-    def __init__(self, pixel_width: int, cell_size: int, terraform_iterations: int):
+    def __init__(self, pixel_width: int, hex_size: int, terraform_iterations: int, min_island_size: int,
+                 min_region_expansions: int, max_region_expansions: int, min_region_size: int):
         self.pixel_width: int = pixel_width
-        self.hex_diameter: int = cell_size
+        self.hex_diameter: int = hex_size
         self.terraform_iterations: int = terraform_iterations
+
+        self.min_island_size: int = min_island_size
+        self.min_region_expansions: int = min_region_expansions
+        self.max_region_expansions: int = max_region_expansions
+        self.min_region_size: int = min_region_size
 
         self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, True)
         self.island_layer: Optional[IslandLayer] = None
@@ -55,7 +61,7 @@ class MapGenerator:
 
                     if self.terraform_iterations == 0:
                         self.base_layer.clear_stray_land()
-                        self.island_layer = IslandLayer(self.base_layer)
+                        self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
                         self.base_layer.test_draw(surface)
                         terraforming = False
                         island_filling = True
@@ -73,7 +79,12 @@ class MapGenerator:
                         island_tick = update_rate
 
                     if not island_filling:
-                        self.region_layer = RegionLayer(self.island_layer)
+                        self.region_layer = RegionLayer(
+                            self.island_layer,
+                            self.min_region_expansions,
+                            self.max_region_expansions,
+                            self.min_region_size
+                        )
             elif region_filling:
                 region_tick -= 1
                 if region_tick <= 0:

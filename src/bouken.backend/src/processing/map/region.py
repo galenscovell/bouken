@@ -1,7 +1,7 @@
 from typing import List, Tuple, Set
 
 from shapely.geometry import Polygon, Point
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 
 from src.processing.map.hex import Hex
 
@@ -26,11 +26,20 @@ class Region(object):
 
     def add_hex(self, h: Hex):
         """
-        Add a hex to this region, refreshing its polygon shape and area.
+        Add a hex to this region.
         """
         h.set_region()
         self.hexes.add(h)
-        self.polygon = cascaded_union([self.polygon, Polygon(h.vertices)])
+
+    def refresh(self):
+        """
+        Refresh this region's polygon shape and area.
+        """
+        to_join = [self.polygon]
+        for h in self.hexes:
+            to_join.append(Polygon(h.vertices))
+
+        self.polygon = unary_union(to_join)
         self.area: float = self.polygon.area
 
     def get_vertices(self) -> List[Tuple[int, int]]:
@@ -70,3 +79,5 @@ class Region(object):
             for h in newly_expanded:
                 self.expanded_hexes.add(h)
                 self.add_hex(h)
+
+            self.refresh()

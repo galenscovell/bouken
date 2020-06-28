@@ -13,14 +13,15 @@ class IslandLayer(HexGrid):
     """
     Defines island layer of a map, detailing separate areas.
     """
-    def __init__(self, base_layer: BaseLayer):
+    def __init__(self, base_layer: BaseLayer, min_island_size: int):
         super().__init__(base_layer._pixel_width, base_layer._hex_size, base_layer._pointy)
+
+        self.min_island_size: int = min_island_size
 
         # Collect all non-water hexes from base layer grid
         self.usable_hexes: List[Hex] = []
         [self.usable_hexes.append(h) for h in base_layer.generator() if h.is_land()]
 
-        self.minimum_area: float = (self.actual_width * self.actual_height) * 0.005
         self.islands: List[Island] = []
         self.current_island: Optional[Island] = None
 
@@ -71,7 +72,7 @@ class IslandLayer(HexGrid):
         """
         to_remove: List[Island] = []
         for i in self.islands:
-            if len(i.hexes) < 5:
+            if len(i.hexes) < self.min_island_size:
                 to_remove.append(i)
 
         for i in to_remove:
