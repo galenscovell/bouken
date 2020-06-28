@@ -56,6 +56,9 @@ class Hex(object):
 
     def __copy__(self) -> Hex:
         cpy: Hex = Hex(self.x, self.y, self._size, self._pointy)
+        cpy._state = self._state
+        cpy.direct_neighbors = self.direct_neighbors
+        cpy.secondary_neighbors = self.secondary_neighbors
         return cpy
 
     def set_neighbor_states(self):

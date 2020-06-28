@@ -57,7 +57,7 @@ class BaseLayer(HexGrid):
         for h in self.generator():
             h.set_shallows()
             r: float = self._random.uniform(0, 100)
-            if r >= 71.5:
+            if r >= 73:
                 h.set_land()
 
     def terraform_land(self):

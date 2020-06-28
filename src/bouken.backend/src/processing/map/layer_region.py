@@ -1,10 +1,10 @@
-from typing import List, Set
+from typing import List
 
 import pygame
 
 from src.processing.map.hex import Hex
 from src.processing.map.hex_grid import HexGrid
-from src.processing.map.layer_base import BaseLayer
+from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.region import Region
 from src.util.constants import region_center_color
 
@@ -13,23 +13,28 @@ class RegionLayer(HexGrid):
     """
     Defines region layer of a map, detailing the political regions on it.
     """
-    def __init__(self, base_layer: BaseLayer):
-        # Recreate base layer grid, but replacing all water hexes with nones
-        # We only want regions to operate on livable land
-        super().__init__(base_layer._pixel_width, base_layer._hex_size, base_layer._pointy)
+    def __init__(self, island_layer: IslandLayer):
+        super().__init__(island_layer._pixel_width, island_layer._hex_size, island_layer._pointy)
 
-        self.usable_hexes: Set[Hex] = set()
+        # Recreate island layer grid
+        self.usable_hexes: List[Hex] = []
         for x in range(self._columns):
             for y in range(self._rows):
-                h: Hex = base_layer[x, y]
-                if h and (h.is_land() or h.is_coast() or h.is_forest() or h.is_desert()):
-                    self[x, y] = h.__copy__()
-                    self[x, y].set_occupied()
-                    self[x, y].direct_neighbors = self._set_direct_neighbors(h)
-                    self[x, y].secondary_neighbors = self._set_secondary_neighbors(h)
-                    self.usable_hexes.add(h)
-                else:
-                    self[x, y] = None
+                self[x, y] = None
+                if island_layer[x, y]:
+                    h: Hex = island_layer[x, y].__copy__()
+                    if h:
+                        h.set_unoccupied()
+                        self[x, y] = h
+                        self.usable_hexes.append(h)
+
+        # Set all neighbors
+        for x in range(self._columns):
+            for y in range(self._rows):
+                h: Hex = self[x, y]
+                if h:
+                    h.direct_neighbors = self._set_direct_neighbors(h)
+                    h.secondary_neighbors = self._set_secondary_neighbors(h)
 
         self.regions: List[Region] = []
         self.init(10)
@@ -37,16 +42,15 @@ class RegionLayer(HexGrid):
     def test_draw(self, surface: pygame.Surface):
         for r in self.regions:
             pygame.draw.polygon(surface, r.color, r.get_vertices())
-            pygame.draw.circle(surface, region_center_color, r.get_centroid(), 6)
+            pygame.draw.circle(surface, region_center_color, r.get_centroid(), 4)
 
     def init(self, starters: int):
         """
         Place random region starting hexes with distinct colors.
         """
-        usable = list(self.usable_hexes.copy())
         for n in range(starters):
-            h: Hex = self._random.choice(usable)
-            usable.remove(h)
+            h: Hex = self._random.choice(self.usable_hexes)
+            self.usable_hexes.remove(h)
             region_color = (self._random.randint(0, 255), self._random.randint(0, 255), self._random.randint(0, 255))
             self.regions.append(Region(h, region_color))
 

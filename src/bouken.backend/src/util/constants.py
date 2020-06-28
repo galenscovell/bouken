@@ -1,6 +1,7 @@
 
 
 background_color = (52, 73, 94)
+island_color = (255, 106, 0)
 region_center_color = (255, 255, 255)
 land_color = (6, 227, 97)
 forest_color = (65, 195, 123)

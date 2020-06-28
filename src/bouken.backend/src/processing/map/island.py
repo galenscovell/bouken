@@ -1,29 +1,31 @@
 from typing import List, Tuple, Set
 
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 
 from src.processing.map.hex import Hex
+from src.processing.map.island_type import IslandType
 
 
-class Region(object):
+class Island(object):
     """
-    Defines a political region of a map, composed of multiple hexes.
+    Defines an island of a map, composed of multiple hexes.
     """
-    def __init__(self, start_hex: Hex, color: Tuple[int, int, int]):
+    def __init__(self, start_hex: Hex):
         self.hexes: Set[Hex] = {start_hex}
-        self.color: Tuple[int, int, int] = color
 
         self.expanded_hexes: Set[Hex] = {start_hex}
+        self.can_expand: bool = True
         self.polygon: Polygon = Polygon(start_hex.vertices)
 
+        self.type: IslandType = IslandType.Grassland
         self.area: float = self.polygon.area
 
         start_hex.set_occupied()
 
     def add_hex(self, h: Hex):
         """
-        Add a hex to this region, refreshing its polygon shape and area.
+        Add a hex to this island, refreshing its polygon shape and area.
         """
         h.set_occupied()
         self.hexes.add(h)
@@ -32,20 +34,13 @@ class Region(object):
 
     def get_vertices(self) -> List[Tuple[int, int]]:
         """
-        Get this region's exterior vertices defining its shape.
+        Get this island's exterior vertices defining its shape.
         """
         return [(p[0], p[1]) for p in self.polygon.exterior.coords]
 
-    def get_centroid(self) -> Tuple[int, int]:
-        """
-        Get this regions polygon centroid position.
-        """
-        p: Point = self.polygon.centroid
-        return int(p.x), int(p.y)
-
     def expand(self, usable_hexes: List[Hex]):
         """
-        Expand this region's area outward from its exterior hexes.
+        Expand this island's area outward from its exterior hexes.
         """
         newly_expanded: Set[Hex] = set()
         for h in self.expanded_hexes:
@@ -53,7 +48,10 @@ class Region(object):
                 if n and n in usable_hexes and not n.is_occupied():
                     newly_expanded.add(n)
 
-        self.expanded_hexes.clear()
-        for h in newly_expanded:
-            self.expanded_hexes.add(h)
-            self.add_hex(h)
+        if not newly_expanded:
+            self.can_expand = False
+        else:
+            self.expanded_hexes.clear()
+            for h in newly_expanded:
+                self.expanded_hexes.add(h)
+                self.add_hex(h)
