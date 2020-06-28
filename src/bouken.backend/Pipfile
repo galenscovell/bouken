@@ -12,6 +12,7 @@ requests = "*"
 starlette = "*"
 redis = "*"
 pygame = "*"
+shapely = "*"
 
 [requires]
 python_version = "3.8"

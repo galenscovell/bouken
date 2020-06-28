@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from random import Random
 from typing import List, Tuple
 
@@ -7,12 +9,14 @@ from src.util.hex_utils import HexUtils
 
 class Hex(object):
     """
-    Defines a single, flat-topped Hex cell.
+    Defines a single hexagon cell.
     """
     def __init__(self, x: int, y: int, size: int, pointy: bool):
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
         self.y: int = y
+        self.size: int = size
+        self.pointy: bool = pointy
 
         self.width_diameter, self.height_diameter, self.vertical_spacing, self.horizontal_spacing = \
             HexUtils.calculate_layout(size, pointy)
@@ -36,7 +40,9 @@ class Hex(object):
         self.state: HexState = HexState.Land
 
         self.state_options: List[HexState] = [
-            HexState.Land, HexState.Forest, HexState.Desert, HexState.Coast, HexState.Shallows, HexState.Depths]
+            HexState.Land, HexState.Forest, HexState.Desert,
+            HexState.Coast, HexState.Shallows, HexState.Depths,
+            HexState.Unoccupied, HexState.Occupied]
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
@@ -46,16 +52,23 @@ class Hex(object):
             return self.x == other.x and self.y == other.y
         return False
 
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+    def __copy__(self) -> Hex:
+        cpy: Hex = Hex(self.x, self.y, self.size, self.pointy)
+        return cpy
+
     def get_connecting_vertex(self, vertex_index: int) -> Tuple[int, int]:
         if vertex_index == len(self.vertices) - 1:
             return self.vertices[0]
         else:
             return self.vertices[vertex_index + 1]
 
-    def set_random_state(self, rdm: Random):
+    def set_random_land(self, rdm: Random):
         self.set_shallows()
         r: float = rdm.uniform(0, 100)
-        if r >= 72:
+        if r >= 71.5:
             self.set_land()
 
     def set_neighbor_states(self):
@@ -89,6 +102,12 @@ class Hex(object):
     def set_depths(self):
         self.state = HexState.Depths
 
+    def set_unoccupied(self):
+        self.state = HexState.Unoccupied
+
+    def set_occupied(self):
+        self.state = HexState.Occupied
+
     def is_land(self) -> bool:
         return self.state == HexState.Land
 
@@ -106,3 +125,6 @@ class Hex(object):
 
     def is_depths(self) -> bool:
         return self.state == HexState.Depths
+
+    def is_occupied(self):
+        return self.state == HexState.Occupied
