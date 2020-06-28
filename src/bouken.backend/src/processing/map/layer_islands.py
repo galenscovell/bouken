@@ -16,26 +16,11 @@ class IslandLayer(HexGrid):
     def __init__(self, base_layer: BaseLayer):
         super().__init__(base_layer._pixel_width, base_layer._hex_size, base_layer._pointy)
 
-        # Recreate base layer grid, but replace all water hexes with nones
-        # We only want islands to operate on livable land
+        # Collect all non-water hexes from base layer grid
         self.usable_hexes: List[Hex] = []
-        for x in range(self._columns):
-            for y in range(self._rows):
-                self[x, y] = None
-                if base_layer[x, y]:
-                    h: Hex = base_layer[x, y].__copy__()
-                    if h and (h.is_land() or h.is_coast() or h.is_forest() or h.is_desert()):
-                        self[x, y] = h
-                        self.usable_hexes.append(h)
+        [self.usable_hexes.append(h) for h in base_layer.generator() if h.is_land()]
 
-        # Set all neighbors
-        for x in range(self._columns):
-            for y in range(self._rows):
-                h: Hex = self[x, y]
-                if h:
-                    h.direct_neighbors = self._set_direct_neighbors(h)
-                    h.secondary_neighbors = self._set_secondary_neighbors(h)
-
+        self.minimum_area: float = (self.actual_width * self.actual_height) * 0.005
         self.islands: List[Island] = []
         self.current_island: Optional[Island] = None
 
@@ -55,7 +40,7 @@ class IslandLayer(HexGrid):
         else:
             if self.usable_hexes:
                 random_h: Hex = self._random.choice(self.usable_hexes)
-                if random_h.is_occupied():
+                if random_h.is_on_island():
                     self.usable_hexes.remove(random_h)
                 else:
                     new_island: Island = Island(random_h)
@@ -77,5 +62,20 @@ class IslandLayer(HexGrid):
                 if h in self.usable_hexes:
                     self.usable_hexes.remove(h)
 
-            self.islands.append(self.current_island)
             self.current_island = None
+
+    def clean_up(self, base_layer: BaseLayer):
+        """
+        Ensure that final islands are a minimum size.
+        Islands under the threshold have their tiles turned into water.
+        """
+        to_remove: List[Island] = []
+        for i in self.islands:
+            if len(i.hexes) < 5:
+                to_remove.append(i)
+
+        for i in to_remove:
+            self.islands.remove(i)
+            for h in i.hexes:
+                base_layer[h.x, h.y].set_water()
+                h.unset_island()

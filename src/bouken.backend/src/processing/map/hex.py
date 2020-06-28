@@ -10,6 +10,7 @@ class Hex(object):
     """
     Defines a single hexagon cell.
     """
+
     def __init__(self, x: int, y: int, size: int, pointy: bool):
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
@@ -36,12 +37,12 @@ class Hex(object):
         self.direct: List[HexState] = []
         self.secondary: List[HexState] = []
 
-        self._state: HexState = HexState.Land
+        self._state: HexState = HexState.Water
+        self._on_island: bool = False
+        self._in_region: bool = False
 
         self._state_options: List[HexState] = [
-            HexState.Land, HexState.Forest, HexState.Desert,
-            HexState.Coast, HexState.Shallows, HexState.Depths,
-            HexState.Unoccupied, HexState.Occupied]
+            HexState.Land, HexState.Water, HexState.Forest, HexState.Desert, HexState.Coast, HexState.Shallows]
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
@@ -77,6 +78,21 @@ class Hex(object):
     def set_land(self):
         self._state = HexState.Land
 
+    def set_water(self):
+        self._state = HexState.Water
+
+    def set_island(self):
+        self._on_island = True
+
+    def unset_island(self):
+        self._on_island = False
+
+    def set_region(self):
+        self._in_region = True
+
+    def unset_region(self):
+        self._in_region = False
+
     def set_forest(self):
         self._state = HexState.Forest
 
@@ -89,17 +105,17 @@ class Hex(object):
     def set_shallows(self):
         self._state = HexState.Shallows
 
-    def set_depths(self):
-        self._state = HexState.Depths
-
-    def set_unoccupied(self):
-        self._state = HexState.Unoccupied
-
-    def set_occupied(self):
-        self._state = HexState.Occupied
-
     def is_land(self) -> bool:
         return self._state == HexState.Land
+
+    def is_water(self) -> bool:
+        return self._state == HexState.Water
+
+    def is_on_island(self) -> bool:
+        return self._on_island is True
+
+    def is_in_region(self) -> bool:
+        return self._in_region is True
 
     def is_forest(self) -> bool:
         return self._state == HexState.Forest
@@ -112,9 +128,3 @@ class Hex(object):
 
     def is_shallows(self) -> bool:
         return self._state == HexState.Shallows
-
-    def is_depths(self) -> bool:
-        return self._state == HexState.Depths
-
-    def is_occupied(self):
-        return self._state == HexState.Occupied

@@ -21,13 +21,13 @@ class Island(object):
         self.type: IslandType = IslandType.Grassland
         self.area: float = self.polygon.area
 
-        start_hex.set_occupied()
+        start_hex.set_island()
 
     def add_hex(self, h: Hex):
         """
         Add a hex to this island, refreshing its polygon shape and area.
         """
-        h.set_occupied()
+        h.set_island()
         self.hexes.add(h)
         self.polygon = cascaded_union([self.polygon, Polygon(h.vertices)])
         self.area: float = self.polygon.area
@@ -45,7 +45,7 @@ class Island(object):
         newly_expanded: Set[Hex] = set()
         for h in self.expanded_hexes:
             for n in h.direct_neighbors:
-                if n and n in usable_hexes and not n.is_occupied():
+                if n and n in usable_hexes and not n.is_on_island():
                     newly_expanded.add(n)
 
         if not newly_expanded:

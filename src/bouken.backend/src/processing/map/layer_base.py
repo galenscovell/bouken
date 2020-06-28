@@ -52,12 +52,11 @@ class BaseLayer(HexGrid):
 
     def init(self):
         """
-        Randomly distribute shallow water and land hexes across grid.
+        Randomly distribute land hexes across grid.
         """
         for h in self.generator():
-            h.set_shallows()
             r: float = self._random.uniform(0, 100)
-            if r >= 73:
+            if r >= 74:
                 h.set_land()
 
     def terraform_land(self):
@@ -69,6 +68,12 @@ class BaseLayer(HexGrid):
             if not h.is_land() and h.total[HexState.Land] > 6:
                 h.set_land()
 
+    def clear_stray_land(self):
+        self.update_hex_states()
+        for h in self.generator():
+            if h.is_land() and h.direct[HexState.Land] < 5:
+                h.set_water()
+
     def terraform_water(self):
         """
         Grow water hexes across grid.
@@ -77,20 +82,20 @@ class BaseLayer(HexGrid):
         for h in self.generator():
             if h.is_land() and h.direct[HexState.Land] < 5:
                 h.set_shallows()
-            elif h.is_depths() and h.direct[HexState.Land] < 0:
+            elif h.is_water() and h.direct[HexState.Land] < 0:
                 h.set_shallows()
 
-    def cleanup(self):
+    def clean_up(self):
         self.update_hex_states()
         for h in self.generator():
             if h.is_land():
                 if h.direct[HexState.Land] < 3:
-                    h.set_depths()
+                    h.set_water()
                 elif h.direct[HexState.Shallows] > 0:
                     h.set_coast()
-            elif h.is_shallows() and h.direct[HexState.Depths] > 5 or h.direct[HexState.Shallows] > 5:
-                h.set_depths()
-            elif h.is_depths() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
+            elif h.is_shallows() and h.direct[HexState.Water] > 5 or h.direct[HexState.Shallows] > 5:
+                h.set_water()
+            elif h.is_water() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
                 h.set_shallows()
 
     def terraform_forests(self):

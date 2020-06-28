@@ -7,12 +7,8 @@ class HexState(IntEnum):
     """
     # Base Layer
     Land = 0
-    Forest = 1
-    Desert = 2
-    Coast = 3
-    Shallows = 4
-    Depths = 5
-
-    # Region Layer
-    Unoccupied = 6
-    Occupied = 7
+    Water = 1
+    Forest = 2
+    Desert = 3
+    Coast = 4
+    Shallows = 5
