@@ -2,7 +2,7 @@ import math
 import random
 from typing import List, Tuple, Optional
 
-from src.models.map.hex import Hex
+from src.processing.map.hex import Hex
 from src.util.hex_utils import HexUtils
 
 
@@ -71,6 +71,9 @@ class HexGrid(object):
         return [self[h.x + dx, h.y + dy] for dx, dy in self._secondary_neighbors]
 
     def generator(self):
+        """
+        Iterate through non-null hexes in the grid.
+        """
         for x in range(self._columns):
             for y in range(self._rows):
                 h: Hex = self[x, y]
@@ -80,4 +83,7 @@ class HexGrid(object):
                 yield h
 
     def update_hex_states(self):
+        """
+        Update the neighbor states for all hexes in the grid.
+        """
         [h.set_neighbor_states() for h in self.generator()]

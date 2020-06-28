@@ -2,16 +2,16 @@ from typing import List, Set
 
 import pygame
 
-from src.models.map.hex import Hex
-from src.models.map.hex_grid import HexGrid
-from src.models.map.layer_base import BaseLayer
-from src.models.map.region import Region
+from src.processing.map.hex import Hex
+from src.processing.map.hex_grid import HexGrid
+from src.processing.map.layer_base import BaseLayer
+from src.processing.map.region import Region
 from src.util.constants import region_center_color
 
 
 class RegionLayer(HexGrid):
     """
-    Defines a layer of a map, detailing the political regions on it.
+    Defines region layer of a map, detailing the political regions on it.
     """
     def __init__(self, base_layer: BaseLayer):
         # Recreate base layer grid, but replacing all water hexes with nones
@@ -32,14 +32,14 @@ class RegionLayer(HexGrid):
                     self[x, y] = None
 
         self.regions: List[Region] = []
-        self.start(10)
+        self.init(10)
 
     def test_draw(self, surface: pygame.Surface):
         for r in self.regions:
             pygame.draw.polygon(surface, r.color, r.get_vertices())
             pygame.draw.circle(surface, region_center_color, r.get_centroid(), 6)
 
-    def start(self, starters: int):
+    def init(self, starters: int):
         """
         Place random region starting hexes with distinct colors.
         """
@@ -51,6 +51,9 @@ class RegionLayer(HexGrid):
             self.regions.append(Region(h, region_color))
 
     def expand(self):
+        """
+        Expand region areas outwards from center.
+        """
         for r in self.regions:
             self.update_hex_states()
             r.expand(self.usable_hexes)

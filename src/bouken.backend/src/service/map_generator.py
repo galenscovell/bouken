@@ -2,8 +2,8 @@ from typing import Optional
 
 from pygame.surface import Surface
 
-from src.models.map.layer_base import BaseLayer
-from src.models.map.layer_region import RegionLayer
+from src.processing.map.layer_base import BaseLayer
+from src.processing.map.layer_region import RegionLayer
 from src.util.constants import background_color, update_rate, frame_rate
 
 

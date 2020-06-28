@@ -1,8 +1,8 @@
 import pygame
 
-from src.models.map.hex import Hex
-from src.models.map.hex_grid import HexGrid
-from src.models.map.hex_state import HexState
+from src.processing.map.hex import Hex
+from src.processing.map.hex_grid import HexGrid
+from src.processing.map.hex_state import HexState
 from src.util.constants import land_color, forest_color, coast_color, shallows_color, depths_color
 
 
@@ -31,7 +31,7 @@ class BaseLayer(HexGrid):
                     h.direct_neighbors = self._set_direct_neighbors(h)
                     h.secondary_neighbors = self._set_secondary_neighbors(h)
 
-        self.reset()
+        self.init()
 
     def test_draw(self, surface: pygame.Surface):
         for h in self.generator():
@@ -50,16 +50,29 @@ class BaseLayer(HexGrid):
 
             pygame.draw.polygon(surface, color, h.vertices)
 
-    def reset(self):
-        [h.set_random_land(self._random) for h in self.generator()]
+    def init(self):
+        """
+        Randomly distribute shallow water and land hexes across grid.
+        """
+        for h in self.generator():
+            h.set_shallows()
+            r: float = self._random.uniform(0, 100)
+            if r >= 71.5:
+                h.set_land()
 
     def terraform_land(self):
+        """
+        Grow land hexes across grid.
+        """
         self.update_hex_states()
         for h in self.generator():
             if not h.is_land() and h.total[HexState.Land] > 6:
                 h.set_land()
 
     def terraform_water(self):
+        """
+        Grow water hexes across grid.
+        """
         self.update_hex_states()
         for h in self.generator():
             if h.is_land() and h.direct[HexState.Land] < 5:
@@ -81,6 +94,9 @@ class BaseLayer(HexGrid):
                 h.set_shallows()
 
     def terraform_forests(self):
+        """
+        Grow forest patches on land areas.
+        """
         for n in range(4):
             self.update_hex_states()
             for h in self.generator():
@@ -92,6 +108,7 @@ class BaseLayer(HexGrid):
                     elif h.direct[HexState.Forest] > 1:
                         h.set_forest()
 
+        # Clear tiny patches of forest
         self.update_hex_states()
         for h in self.generator():
             if h.is_forest() and h.total[HexState.Forest] < 4:
