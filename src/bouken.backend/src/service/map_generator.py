@@ -1,6 +1,5 @@
+import sys
 from typing import Optional
-
-from pygame.surface import Surface
 
 from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_islands import IslandLayer
@@ -10,7 +9,7 @@ from src.util.constants import background_color, update_rate, frame_rate
 
 class MapGenerator:
     """
-    Procedurally generates hexagon-based maps composed of land formations and political regions.
+    Procedurally generates hexagon-based maps composed of land features and political regions.
     """
     def __init__(self, pixel_width: int, hex_size: int, terraform_iterations: int, min_island_size: int,
                  min_region_expansions: int, max_region_expansions: int, min_region_size: int):
@@ -28,13 +27,38 @@ class MapGenerator:
         self.region_layer: Optional[RegionLayer] = None
 
         self.test_display()
+        # self.generate()
+
+    def generate(self):
+        for n in range(self.terraform_iterations):
+            self.base_layer.terraform_land()
+        self.base_layer.clear_stray_land()
+
+        self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
+
+        filling_islands: bool = True
+        while filling_islands:
+            filling_islands = self.island_layer.discover()
+        self.island_layer.clean_up(self.base_layer)
+
+        self.region_layer = RegionLayer(
+            self.island_layer,
+            self.min_region_expansions,
+            self.max_region_expansions,
+            self.min_region_size
+        )
+
+        filling_regions: bool = True
+        while filling_regions:
+            filling_regions = self.region_layer.discover()
+        self.region_layer.clean_up(self.base_layer)
 
     def test_display(self):
         import pygame
 
         pygame.init()
-        surface: Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
-        pygame.display.set_caption('Bouken Test Display')
+        surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
+        pygame.display.set_caption('Bouken Map Generation Debug')
 
         clock = pygame.time.Clock()
         surface.fill(background_color)
@@ -108,3 +132,4 @@ class MapGenerator:
             clock.tick(frame_rate)
 
         pygame.quit()
+        sys.exit(0)

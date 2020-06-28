@@ -1,26 +1,25 @@
+import random
 from typing import List, Optional
 
 import pygame
 
 from src.processing.map.hex import Hex
-from src.processing.map.hex_grid import HexGrid
 from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.region import Region
 from src.util.constants import region_center_color
 
 
-class RegionLayer(HexGrid):
+class RegionLayer(object):
     """
     Defines region layer of a map, detailing the political regions on it.
     """
     def __init__(self, island_layer: IslandLayer,
                  min_region_expansions: int, max_region_expansions: int, min_region_size: int):
-        super().__init__(island_layer._pixel_width, island_layer._hex_size, island_layer._pointy)
-
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
         self.min_region_size: int = min_region_size
+        self._random: random.Random = random.Random()
 
         # Get all island layer hexes
         self.usable_hexes: List[Hex] = []
@@ -40,7 +39,6 @@ class RegionLayer(HexGrid):
         Place random region starting hexes.
         Returns True if there is remaining space to discover, False otherwise.
         """
-        self.update_hex_states()
         if self.current_region:
             self.expand()
         else:

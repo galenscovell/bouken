@@ -1,22 +1,21 @@
+import random
 from typing import List, Optional
 
 import pygame
 
 from src.processing.map.hex import Hex
-from src.processing.map.hex_grid import HexGrid
 from src.processing.map.island import Island
 from src.processing.map.layer_base import BaseLayer
 from src.util.constants import island_color
 
 
-class IslandLayer(HexGrid):
+class IslandLayer(object):
     """
     Defines island layer of a map, detailing separate areas.
     """
     def __init__(self, base_layer: BaseLayer, min_island_size: int):
-        super().__init__(base_layer._pixel_width, base_layer._hex_size, base_layer._pointy)
-
         self.min_island_size: int = min_island_size
+        self._random: random.Random = random.Random()
 
         # Collect all non-water hexes from base layer grid
         self.usable_hexes: List[Hex] = []
@@ -34,7 +33,6 @@ class IslandLayer(HexGrid):
         Place random island starting hexes.
         Returns True if there is remaining space to discover, False otherwise.
         """
-        self.update_hex_states()
         if self.current_island:
             self.expand()
             return True
