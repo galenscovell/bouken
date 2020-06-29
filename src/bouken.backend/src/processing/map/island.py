@@ -35,7 +35,7 @@ class Island(object):
         Refresh this island's polygon shape and area.
         """
         to_join = [self.polygon]
-        for h in self.hexes:
+        for h in self.expanded_hexes:
             to_join.append(Polygon(h.vertices))
 
         self.polygon = unary_union(to_join)

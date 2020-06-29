@@ -6,7 +6,7 @@ import pygame
 
 from src.processing.map.hex import Hex
 from src.processing.map.hex_state import HexState
-from src.util.constants import land_color, forest_color, coast_color, shallows_color, depths_color
+from src.util.constants import land_color, forest_color, coast_color, shallows_color, water_color
 from src.util.hex_utils import HexUtils
 
 
@@ -126,7 +126,7 @@ class BaseLayer(object):
             elif h.is_shallows():
                 color = shallows_color
             else:
-                color = depths_color
+                color = water_color
 
             pygame.draw.polygon(surface, color, h.vertices)
 

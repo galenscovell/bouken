@@ -26,8 +26,8 @@ class MapGenerator:
         self.island_layer: Optional[IslandLayer] = None
         self.region_layer: Optional[RegionLayer] = None
 
-        self.test_display()
         # self.generate()
+        self.test_display()
 
     def generate(self):
         for n in range(self.terraform_iterations):
