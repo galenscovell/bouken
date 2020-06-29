@@ -5,8 +5,8 @@ from typing import List, Optional, Tuple
 import pygame
 
 from src.processing.map.hex import Hex
-from src.processing.map.hex_state import HexState
-from src.util.constants import land_color, forest_color, coast_color, shallows_color, water_color
+from src.processing.map.terraform_state import TerraformState
+from src.util.constants import land_color, water_color, coast_color
 from src.util.hex_utils import HexUtils
 
 
@@ -117,14 +117,8 @@ class BaseLayer(object):
         for h in self.generator():
             if h.is_land():
                 color = land_color
-            elif h.is_forest():
-                color = forest_color
-            elif h.is_desert():
+            elif h.is_lake():
                 color = coast_color
-            elif h.is_coast():
-                color = coast_color
-            elif h.is_shallows():
-                color = shallows_color
             else:
                 color = water_color
 
@@ -136,7 +130,7 @@ class BaseLayer(object):
         """
         for h in self.generator():
             r: float = self._random.uniform(0, 100)
-            if r >= 73:
+            if r >= 71.5:
                 h.set_land()
 
     def terraform_land(self):
@@ -145,56 +139,14 @@ class BaseLayer(object):
         """
         self.update_hex_states()
         for h in self.generator():
-            if not h.is_land() and h.total[HexState.Land] > 6:
+            if not h.is_land() and h.total[TerraformState.Land] > 6:
                 h.set_land()
-
-    def clear_stray_land(self):
-        self.update_hex_states()
-        for h in self.generator():
-            if h.is_land() and h.direct[HexState.Land] < 5:
-                h.set_water()
-
-    def terraform_water(self):
-        """
-        Grow water hexes across grid.
-        """
-        self.update_hex_states()
-        for h in self.generator():
-            if h.is_land() and h.direct[HexState.Land] < 5:
-                h.set_shallows()
-            elif h.is_water() and h.direct[HexState.Land] < 0:
-                h.set_shallows()
 
     def clean_up(self):
+        """
+        Remove stray patches of land across grid.
+        """
         self.update_hex_states()
         for h in self.generator():
-            if h.is_land():
-                if h.direct[HexState.Land] < 3:
-                    h.set_water()
-                elif h.direct[HexState.Shallows] > 0:
-                    h.set_coast()
-            elif h.is_shallows() and h.direct[HexState.Water] > 5 or h.direct[HexState.Shallows] > 5:
-                h.set_water()
-            elif h.is_water() and h.direct[HexState.Coast] > 0 or h.direct[HexState.Land] > 0:
-                h.set_shallows()
-
-    def terraform_forests(self):
-        """
-        Grow forest patches on land areas.
-        """
-        for n in range(4):
-            self.update_hex_states()
-            for h in self.generator():
-                if h.is_land() and h.total[HexState.Coast] == 0 and h.total[HexState.Shallows] == 0:
-                    if h.direct[HexState.Land] == 6:
-                        r: float = self._random.uniform(0, 100)
-                        if r >= 95:
-                            h.set_forest()
-                    elif h.direct[HexState.Forest] > 1:
-                        h.set_forest()
-
-        # Clear tiny patches of forest
-        self.update_hex_states()
-        for h in self.generator():
-            if h.is_forest() and h.total[HexState.Forest] < 4:
-                h.set_land()
+            if h.is_land() and h.direct[TerraformState.Land] < 4:
+                h.set_ocean()

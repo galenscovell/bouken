@@ -1,5 +1,5 @@
 import random
-from typing import List, Optional
+from typing import List, Optional, Dict, KeysView
 
 import pygame
 
@@ -12,39 +12,60 @@ from src.util.constants import island_color
 class IslandLayer(object):
     """
     Defines island layer of a map, detailing separate areas.
+    Interactions directly with this object deal with the Islands dict, its primary data.
     """
     def __init__(self, base_layer: BaseLayer, min_island_size: int):
-        self.min_island_size: int = min_island_size
+        self._min_island_size: int = min_island_size
         self._random: random.Random = random.Random()
 
         # Collect all non-water hexes from base layer grid
-        self.usable_hexes: List[Hex] = []
-        [self.usable_hexes.append(h) for h in base_layer.generator() if h.is_land()]
+        self._usable_hexes: List[Hex] = []
+        [self._usable_hexes.append(h) for h in base_layer.generator() if h.is_land()]
 
-        self.islands: List[Island] = []
-        self.current_island: Optional[Island] = None
+        self._island_key_to_island: Dict[int, Island] = {}
+        self._current_island: Optional[Island] = None
+
+    def __len__(self) -> int:
+        return len(self._island_key_to_island)
+
+    def __setitem__(self, island_key: int, value: Island):
+        self._island_key_to_island[island_key] = value
+
+    def __getitem__(self, island_key: int) -> Optional[Island]:
+        if island_key in self._island_key_to_island:
+            return self._island_key_to_island[island_key]
+        return None
+
+    def __delitem__(self, island_key: int):
+        if island_key in self._island_key_to_island:
+            del self._island_key_to_island[island_key]
+
+    def keys(self) -> KeysView[int]:
+        return self._island_key_to_island.keys()
 
     def test_draw(self, surface: pygame.Surface):
-        for i in self.islands:
-            pygame.draw.polygon(surface, island_color, i.get_vertices())
+        for island_key in self.keys():
+            island: Island = self._island_key_to_island[island_key]
+            pygame.draw.polygon(surface, island_color, island.get_vertices())
 
     def discover(self) -> bool:
         """
         Place random island starting hexes.
         Returns True if there is remaining space to discover, False otherwise.
         """
-        if self.current_island:
+        if self._current_island:
             self.expand()
             return True
         else:
-            if self.usable_hexes:
-                random_h: Hex = self._random.choice(self.usable_hexes)
+            if self._usable_hexes:
+                random_h: Hex = self._random.choice(self._usable_hexes)
                 if random_h.is_on_island():
-                    self.usable_hexes.remove(random_h)
+                    self._usable_hexes.remove(random_h)
                 else:
-                    new_island: Island = Island(random_h)
-                    self.islands.append(new_island)
-                    self.current_island = new_island
+                    island_id: int = len(self) + 1
+                    new_island: Island = Island(island_id, random_h)
+                    self._island_key_to_island[island_id] = new_island
+                    self._current_island = new_island
 
                 return True
             else:
@@ -54,27 +75,30 @@ class IslandLayer(object):
         """
         Expand island area outward until it can no longer expand.
         """
-        if self.current_island.can_expand:
-            self.current_island.expand(self.usable_hexes)
+        if self._current_island.can_expand:
+            self._current_island.expand(self._usable_hexes)
         else:
-            for h in self.current_island.hexes:
-                if h in self.usable_hexes:
-                    self.usable_hexes.remove(h)
+            for h in self._current_island.hexes:
+                if h in self._usable_hexes:
+                    self._usable_hexes.remove(h)
 
-            self.current_island = None
+            self._current_island = None
 
     def clean_up(self, base_layer: BaseLayer):
         """
         Ensure that final islands are a minimum size.
         Islands under the threshold have their tiles turned into water.
         """
-        to_remove: List[Island] = []
-        for i in self.islands:
-            if len(i.hexes) < self.min_island_size:
-                to_remove.append(i)
+        to_remove: List[int] = []
+        for island_key in self.keys():
+            island: Island = self[island_key]
+            if len(island.hexes) < self._min_island_size:
+                to_remove.append(island_key)
 
-        for i in to_remove:
-            self.islands.remove(i)
-            for h in i.hexes:
-                base_layer[h.x, h.y].set_water()
+        for island_key in to_remove:
+            island: Island = self[island_key]
+            for h in island.hexes:
+                base_layer[h.x, h.y].set_ocean()
                 h.unset_island()
+
+            del self[island_key]

@@ -12,7 +12,8 @@ class MapGenerator:
     Procedurally generates hexagon-based maps composed of land features and political regions.
     """
     def __init__(self, pixel_width: int, hex_size: int, terraform_iterations: int, min_island_size: int,
-                 min_region_expansions: int, max_region_expansions: int, min_region_size: int):
+                 min_region_expansions: int, max_region_expansions: int,
+                 min_region_area_pct: float, min_lake_area_pct: float):
         self.pixel_width: int = pixel_width
         self.hex_diameter: int = hex_size
         self.terraform_iterations: int = terraform_iterations
@@ -20,7 +21,8 @@ class MapGenerator:
         self.min_island_size: int = min_island_size
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
-        self.min_region_size: int = min_region_size
+        self.min_region_area_pct: float = min_region_area_pct
+        self.min_lake_area_pct: float = min_lake_area_pct
 
         self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, True)
         self.island_layer: Optional[IslandLayer] = None
@@ -32,7 +34,7 @@ class MapGenerator:
     def generate(self):
         for n in range(self.terraform_iterations):
             self.base_layer.terraform_land()
-        self.base_layer.clear_stray_land()
+        self.base_layer.clean_up()
 
         self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
 
@@ -45,20 +47,28 @@ class MapGenerator:
             self.island_layer,
             self.min_region_expansions,
             self.max_region_expansions,
-            self.min_region_size
+            self.min_region_area_pct,
+            self.min_lake_area_pct
         )
 
         filling_regions: bool = True
         while filling_regions:
-            filling_regions = self.region_layer.discover()
-        self.region_layer.clean_up(self.base_layer)
+            filling_regions = self.region_layer.discover(self.island_layer)
+        self.region_layer.clean_up(self.island_layer)
+
+    def serialize(self) -> str:
+        # Serialize Islands: type, polygon coordinates + area, regions
+        # Regions: type, polygon coordinates + area, centroid xy, distance from coast, elevation
+        return ''
 
     def test_display(self):
         import pygame
+        from pygame import freetype
 
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
         pygame.display.set_caption('Bouken Map Generation Debug')
+        font = freetype.Font('source-code-pro.ttf', 21)
 
         clock = pygame.time.Clock()
         surface.fill(background_color)
@@ -84,7 +94,7 @@ class MapGenerator:
                     self.terraform_iterations -= 1
 
                     if self.terraform_iterations == 0:
-                        self.base_layer.clear_stray_land()
+                        self.base_layer.clean_up()
                         self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
                         self.base_layer.test_draw(surface)
                         terraforming = False
@@ -107,16 +117,17 @@ class MapGenerator:
                             self.island_layer,
                             self.min_region_expansions,
                             self.max_region_expansions,
-                            self.min_region_size
+                            self.min_region_area_pct,
+                            self.min_lake_area_pct
                         )
             elif region_filling:
                 region_tick -= 1
                 if region_tick <= 0:
-                    remaining: bool = self.region_layer.discover()
+                    remaining: bool = self.region_layer.discover(self.island_layer)
                     if not remaining:
-                        self.region_layer.clean_up(self.base_layer)
+                        self.region_layer.clean_up(self.island_layer)
                         self.base_layer.test_draw(surface)
-                        self.region_layer.test_draw(surface)
+                        self.region_layer.test_draw(surface, font)
                         region_filling = False
                     else:
                         region_tick = update_rate
@@ -126,7 +137,7 @@ class MapGenerator:
             elif island_filling:
                 self.island_layer.test_draw(surface)
             elif region_filling:
-                self.region_layer.test_draw(surface)
+                self.region_layer.test_draw(surface, font)
 
             pygame.display.flip()
             clock.tick(frame_rate)

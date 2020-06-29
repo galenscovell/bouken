@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from src.processing.map.hex_state import HexState
+from src.processing.map.terraform_state import TerraformState
 from src.util.hex_utils import HexUtils
 
 
@@ -33,16 +33,18 @@ class Hex(object):
 
         self.direct_neighbors: List[Hex] = []
         self.secondary_neighbors: List[Hex] = []
-        self.total: List[HexState] = []
-        self.direct: List[HexState] = []
-        self.secondary: List[HexState] = []
+        self.total: List[TerraformState] = []
+        self.direct: List[TerraformState] = []
+        self.secondary: List[TerraformState] = []
 
-        self._state: HexState = HexState.Water
+        self._state: TerraformState = TerraformState.Ocean
         self._on_island: bool = False
         self._in_region: bool = False
 
-        self._state_options: List[HexState] = [
-            HexState.Land, HexState.Water, HexState.Forest, HexState.Desert, HexState.Coast, HexState.Shallows]
+        self._state_options: List[TerraformState] = [TerraformState.Land, TerraformState.Ocean, TerraformState.Lake]
+
+        self.island_id: int = -1
+        self.region_id: int = -1
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
@@ -76,55 +78,41 @@ class Hex(object):
         self.total = [self.direct[n] + self.secondary[n] for n in range(len(self._state_options))]
 
     def set_land(self):
-        self._state = HexState.Land
+        self._state = TerraformState.Land
 
-    def set_water(self):
-        self._state = HexState.Water
+    def set_ocean(self):
+        self._state = TerraformState.Ocean
 
-    def set_island(self):
+    def set_lake(self):
+        self._state = TerraformState.Lake
+
+    def set_island(self, island_id: int):
         self._on_island = True
+        self.island_id = island_id
 
     def unset_island(self):
         self._on_island = False
+        self.island_id = -1
 
-    def set_region(self):
+    def set_region(self, region_id: int):
         self._in_region = True
+        self.region_id = region_id
 
     def unset_region(self):
         self._in_region = False
-
-    def set_forest(self):
-        self._state = HexState.Forest
-
-    def set_desert(self):
-        self._state = HexState.Desert
-
-    def set_coast(self):
-        self._state = HexState.Coast
-
-    def set_shallows(self):
-        self._state = HexState.Shallows
+        self.region_id = -1
 
     def is_land(self) -> bool:
-        return self._state == HexState.Land
+        return self._state == TerraformState.Land
 
-    def is_water(self) -> bool:
-        return self._state == HexState.Water
+    def is_ocean(self) -> bool:
+        return self._state == TerraformState.Ocean
+
+    def is_lake(self) -> bool:
+        return self._state == TerraformState.Lake
 
     def is_on_island(self) -> bool:
         return self._on_island is True
 
     def is_in_region(self) -> bool:
         return self._in_region is True
-
-    def is_forest(self) -> bool:
-        return self._state == HexState.Forest
-
-    def is_desert(self) -> bool:
-        return self._state == HexState.Desert
-
-    def is_coast(self) -> bool:
-        return self._state == HexState.Coast
-
-    def is_shallows(self) -> bool:
-        return self._state == HexState.Shallows

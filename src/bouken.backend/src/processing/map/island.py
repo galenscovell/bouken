@@ -11,23 +11,25 @@ class Island(object):
     """
     Defines an island of a map, composed of multiple hexes.
     """
-    def __init__(self, start_hex: Hex):
+    def __init__(self, island_id: int, start_hex: Hex):
+        self.island_id: int = island_id
         self.hexes: Set[Hex] = {start_hex}
+        self.region_keys: Set[int] = set()
 
         self.expanded_hexes: Set[Hex] = {start_hex}
         self.can_expand: bool = True
-        self.polygon: Polygon = Polygon(start_hex.vertices)
 
         self.type: IslandType = IslandType.Grassland
+        self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
 
-        start_hex.set_island()
+        start_hex.set_island(self.island_id)
 
     def add_hex(self, h: Hex):
         """
         Add a hex to this island.
         """
-        h.set_island()
+        h.set_island(self.island_id)
         self.hexes.add(h)
 
     def refresh(self):
