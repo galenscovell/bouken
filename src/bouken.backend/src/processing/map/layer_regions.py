@@ -112,7 +112,7 @@ class RegionLayer(object):
         Find and set the neighboring regions for each region.
         """
         for region_key in self.keys():
-            self[region_key].find_neighbors()
+            self[region_key].describe()
 
     def _get_regions_under_threshold(self) -> List[int]:
         """
@@ -133,6 +133,8 @@ class RegionLayer(object):
         """
         self._merge_regions(island_layer)
         self._make_lakes(island_layer)
+        self._randomize_edges()
+        self.update_neighbors()
 
     def _merge_regions(self, island_layer: IslandLayer):
         """
@@ -193,3 +195,12 @@ class RegionLayer(object):
 
             del self[region_key]
         self.update_neighbors()
+
+    def _randomize_edges(self):
+        """
+        Randomize edges of all regions to reduce uniformity.
+        """
+        for region_key in self.keys():
+            self.update_neighbors()
+            region = self[region_key]
+            region.randomize_edges(self._random, self._region_key_to_region)

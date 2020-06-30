@@ -1,4 +1,7 @@
-from typing import List, Tuple, Set
+from __future__ import annotations
+
+import random
+from typing import List, Tuple, Set, Dict
 
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
@@ -24,6 +27,7 @@ class Region(object):
         self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
 
+        self._exterior_hexes: Set[Hex] = set()
         self.neighbor_region_ids: Set[int] = set()
         self.is_coastal: bool = False
         self.is_bordering_lake: bool = False
@@ -38,6 +42,19 @@ class Region(object):
         """
         h.set_region(self.region_id)
         self.hexes.add(h)
+
+    def remove_hex(self, h: Hex):
+        """
+        Remove all references of a hex for this region.
+        """
+        if h in self.hexes:
+            self.hexes.remove(h)
+
+        if h in self._exterior_hexes:
+            self._exterior_hexes.remove(h)
+
+        if h in self._expanded_hexes:
+            self._expanded_hexes.remove(h)
 
     def refresh(self, to_join_hexes):
         """
@@ -90,10 +107,11 @@ class Region(object):
 
             self.refresh(self._expanded_hexes)
 
-    def find_neighbors(self):
+    def describe(self):
         """
-        Find all regions connected to this region.
+        Find all regions connected to this region, its exterior hexes, and its overall status geographically.
         """
+        self._exterior_hexes.clear()
         self.neighbor_region_ids.clear()
         self.is_coastal: bool = False
         self.is_bordering_lake: bool = False
@@ -110,8 +128,26 @@ class Region(object):
                     elif n.is_lake():
                         self.is_bordering_lake = True
 
+                    if n.region_id != self.region_id:
+                        self._exterior_hexes.add(h)
+
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded
 
+    def randomize_edges(self, random: random.Random, regions_map: Dict[int, Region]):
+        newly_expanded: Set[Hex] = set()
+        for h in self._exterior_hexes:
+            connecting_hexes: List[Hex] = [n for n in h.direct_neighbors if n and n.region_id != self.region_id]
+            if connecting_hexes:
+                random_hex: Hex = random.choice(connecting_hexes)
+                if random_hex.is_in_region():
+                    region: Region = regions_map[random_hex.region_id]
+                    region.remove_hex(random_hex)
 
+                else:
+                    random_hex.set_land()
 
+                random_hex.set_region(self.region_id)
+                newly_expanded.add(random_hex)
+
+        self.refresh(newly_expanded)
