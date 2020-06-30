@@ -20,14 +20,14 @@ MVP V1 - Pure Generation
     * Characters have a class, level, name, ability scores, skills
 * Frontend takes in team members, desired challenge level -> calls backend to generate maps
 * Backend generates map:
-    1) Voronoi overworld map: Regions + landscape features
-    2) For each "dungeon" landscape feature (caves, temple, fortress, etc.), generate non-voronoi interior map
+    1) Hexagon overworld map: Regions + landscape features
+    2) For each "dungeon" landscape feature (caves, temple, fortress, etc.), generate non-hexagon interior map
     3) Generate high-level story goal
     4) Create overworld events tying to high-level goal
     5) Create interior events tying to overworld and high-level goals
     6) Name overworld and interiors
 * Frontend displays interactive map
-    * Hover over events, landscape features, etc. for details. Hovering over interior locations displays their map and events
+    * Hover over events, landscape features etc. for details. Hovering over interior locations displays their map and events
 
 
 ==============================================================

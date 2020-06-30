@@ -92,11 +92,11 @@ if __name__ == '__main__':
     map_gen = MapGenerator(
         pixel_width=900,
         hex_size=12,
-        terraform_iterations=40,
-        min_island_size=6,
-        min_region_expansions=2,
-        max_region_expansions=9,
-        min_region_area_pct=0.06,
-        min_lake_area_pct=0.3,
+        initial_land_pct=0.3,
+        terraform_iterations=30,
+        min_island_size=14,
+        min_region_expansions=1,
+        max_region_expansions=4,
+        min_region_size_pct=0.01
     )
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')

@@ -1,11 +1,9 @@
-from random import Random
 from typing import List, Tuple, Set
 
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
 from src.processing.map.hex import Hex
-from src.processing.map.terraform_state import TerraformState
 
 
 class Region(object):
@@ -25,6 +23,12 @@ class Region(object):
 
         self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
+
+        self.neighbor_region_ids: Set[int] = set()
+        self.is_coastal: bool = False
+        self.is_bordering_lake: bool = False
+        self.is_secluded: bool = False
+        self.is_surrounded: bool = False
 
         start_hex.set_region(self.region_id)
 
@@ -65,31 +69,6 @@ class Region(object):
         """
         return self._can_expand and self._expansions > 0
 
-    def create_lake(self, random: Random) -> List[Hex]:
-        """
-        Create a lake at a random location with a random number of expansions.
-        """
-        lake_hex: Set[Hex] = set()
-
-        self.start_hex.set_lake()
-        self.hexes.remove(self.start_hex)
-        newly_expanded: Set[Hex] = {self.start_hex}
-        next_to_expand: Set[Hex] = set()
-        for x in range(random.randint(1, 3)):
-            for h in newly_expanded:
-                for n in h.direct_neighbors:
-                    if n in self.hexes and n.direct[TerraformState.Ocean] == 0:
-                        self.hexes.remove(n)
-                        lake_hex.add(n)
-                        next_to_expand.add(n)
-
-            newly_expanded = next_to_expand.copy()
-            next_to_expand.clear()
-
-            self.refresh(newly_expanded)
-
-        return list(lake_hex)
-
     def expand(self, usable_hexes: List[Hex]):
         """
         Expand this region's area outward from its exterior hexes.
@@ -110,3 +89,29 @@ class Region(object):
                 self.add_hex(h)
 
             self.refresh(self._expanded_hexes)
+
+    def find_neighbors(self):
+        """
+        Find all regions connected to this region.
+        """
+        self.neighbor_region_ids.clear()
+        self.is_coastal: bool = False
+        self.is_bordering_lake: bool = False
+        self.is_secluded: bool = False
+        self.is_surrounded: bool = False
+
+        for h in self.hexes:
+            for n in h.direct_neighbors:
+                if n:
+                    if n.is_in_region() and n.region_id != self.region_id:
+                        self.neighbor_region_ids.add(n.region_id)
+                    elif n.is_ocean():
+                        self.is_coastal = True
+                    elif n.is_lake():
+                        self.is_bordering_lake = True
+
+        self.is_secluded = len(self.neighbor_region_ids) < 1
+        self.is_surrounded = not self.is_coastal and not self.is_secluded
+
+
+

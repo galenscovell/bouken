@@ -11,20 +11,20 @@ class MapGenerator:
     """
     Procedurally generates hexagon-based maps composed of land features and political regions.
     """
-    def __init__(self, pixel_width: int, hex_size: int, terraform_iterations: int, min_island_size: int,
-                 min_region_expansions: int, max_region_expansions: int,
-                 min_region_area_pct: float, min_lake_area_pct: float):
+    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, terraform_iterations: int,
+                 min_island_size: int, min_region_expansions: int, max_region_expansions: int,
+                 min_region_size_pct: float):
         self.pixel_width: int = pixel_width
         self.hex_diameter: int = hex_size
+        self.initial_land_pct: float = initial_land_pct
         self.terraform_iterations: int = terraform_iterations
 
         self.min_island_size: int = min_island_size
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
-        self.min_region_area_pct: float = min_region_area_pct
-        self.min_lake_area_pct: float = min_lake_area_pct
+        self.min_region_size_pct: float = min_region_size_pct
 
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, True)
+        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, True)
         self.island_layer: Optional[IslandLayer] = None
         self.region_layer: Optional[RegionLayer] = None
 
@@ -47,8 +47,8 @@ class MapGenerator:
             self.island_layer,
             self.min_region_expansions,
             self.max_region_expansions,
-            self.min_region_area_pct,
-            self.min_lake_area_pct
+            self.min_region_size_pct,
+            self.base_layer.total_hex_size()
         )
 
         filling_regions: bool = True
@@ -68,7 +68,7 @@ class MapGenerator:
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
         pygame.display.set_caption('Bouken Map Generation Debug')
-        font = freetype.Font('source-code-pro.ttf', 21)
+        font = freetype.Font('source-code-pro.ttf', 16)
 
         clock = pygame.time.Clock()
         surface.fill(background_color)
@@ -117,8 +117,8 @@ class MapGenerator:
                             self.island_layer,
                             self.min_region_expansions,
                             self.max_region_expansions,
-                            self.min_region_area_pct,
-                            self.min_lake_area_pct
+                            self.min_region_size_pct,
+                            self.base_layer.total_hex_size()
                         )
             elif region_filling:
                 region_tick -= 1

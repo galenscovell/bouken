@@ -6,7 +6,7 @@ import pygame
 
 from src.processing.map.hex import Hex
 from src.processing.map.terraform_state import TerraformState
-from src.util.constants import land_color, water_color, coast_color
+from src.util.constants import land_color, ocean_color, lake_color
 from src.util.hex_utils import HexUtils
 
 
@@ -18,10 +18,11 @@ class BaseLayer(object):
     Hexes can be either pointy or flat topped - calculations will shift accordingly.
     Allows for both indexed set/get and generator looping of all hexes.
     """
-    def __init__(self, pixel_width: int, hex_size: int, pointy: bool = True):
+    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, pointy: bool = True):
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
 
+        self.initial_land_pct: float = initial_land_pct
         self._pointy: bool = pointy
         self._hex_size: int = hex_size
         width_diameter, height_diameter, vertical_spacing, horizontal_spacing = \
@@ -83,6 +84,13 @@ class BaseLayer(object):
             return self.grid[xy[0]][xy[1]]
         return None
 
+    def total_hex_size(self) -> int:
+        total: int = 0
+        for h in self.generator():
+            total += 1
+
+        return total
+
     def _set_direct_neighbors(self, h: Hex) -> List[Optional[Hex]]:
         """
         Return the 6 direct neighbours of a hex.
@@ -118,9 +126,9 @@ class BaseLayer(object):
             if h.is_land():
                 color = land_color
             elif h.is_lake():
-                color = coast_color
+                color = lake_color
             else:
-                color = water_color
+                color = ocean_color
 
             pygame.draw.polygon(surface, color, h.vertices)
 
@@ -129,8 +137,8 @@ class BaseLayer(object):
         Randomly distribute land hexes across grid.
         """
         for h in self.generator():
-            r: float = self._random.uniform(0, 100)
-            if r >= 71.5:
+            r: float = self._random.uniform(0, 1)
+            if r <= self.initial_land_pct:
                 h.set_land()
 
     def terraform_land(self):
