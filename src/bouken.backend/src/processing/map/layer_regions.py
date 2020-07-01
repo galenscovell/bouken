@@ -8,7 +8,7 @@ from src.processing.map.hex import Hex
 from src.processing.map.island import Island
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.region import Region
-from src.util.constants import region_center_color, coast_color
+from src.util.constants import region_center_color
 
 
 class RegionLayer(object):
@@ -133,8 +133,7 @@ class RegionLayer(object):
         """
         self._merge_regions(island_layer)
         self._make_lakes(island_layer)
-        self._randomize_edges()
-        self.update_neighbors()
+        # self._randomize_edges()
 
     def _merge_regions(self, island_layer: IslandLayer):
         """
@@ -169,7 +168,7 @@ class RegionLayer(object):
         """
         Turn random regions into water.
         """
-        lakes_num: int = self._random.randint(1, 4)
+        lakes_num: int = self._random.randint(2, 5)
         for n in range(lakes_num):
             self.update_neighbors()
             region_key: int = self._random.choice(list(self.keys()))
@@ -182,7 +181,7 @@ class RegionLayer(object):
                 h.unset_island()
 
                 if region.is_coastal:
-                    h.set_ocean()
+                    h.set_lake()
                 else:
                     h.set_lake()
 
@@ -195,12 +194,3 @@ class RegionLayer(object):
 
             del self[region_key]
         self.update_neighbors()
-
-    def _randomize_edges(self):
-        """
-        Randomize edges of all regions to reduce uniformity.
-        """
-        for region_key in self.keys():
-            self.update_neighbors()
-            region = self[region_key]
-            region.randomize_edges(self._random, self._region_key_to_region)

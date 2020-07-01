@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import random
-from typing import List, Tuple, Set, Dict
+from typing import List, Tuple, Set
 
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
@@ -33,6 +32,8 @@ class Region(object):
         self.is_bordering_lake: bool = False
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
+        self.avg_elevation: float = 0
+        self.avg_moisture: float = 0
 
         start_hex.set_region(self.region_id)
 
@@ -56,13 +57,17 @@ class Region(object):
         if h in self._expanded_hexes:
             self._expanded_hexes.remove(h)
 
-    def refresh(self, to_join_hexes):
+    def refresh(self, to_join_hexes=None):
         """
         Refresh this region's polygon shape and area.
         """
         to_join = [self.polygon]
-        for h in to_join_hexes:
-            to_join.append(Polygon(h.vertices))
+        if to_join_hexes:
+            for h in to_join_hexes:
+                to_join.append(Polygon(h.vertices))
+        else:
+            for h in self.hexes:
+                to_join.append(Polygon(h.vertices))
 
         self.polygon = unary_union(to_join)
         self.area: float = self.polygon.area
@@ -118,7 +123,11 @@ class Region(object):
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
 
+        avg_elevation: float = 0
+        avg_moisture: float = 0
         for h in self.hexes:
+            avg_elevation += h.elevation
+            avg_moisture += h.moisture
             for n in h.direct_neighbors:
                 if n:
                     if n.is_in_region() and n.region_id != self.region_id:
@@ -133,21 +142,5 @@ class Region(object):
 
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded
-
-    def randomize_edges(self, random: random.Random, regions_map: Dict[int, Region]):
-        newly_expanded: Set[Hex] = set()
-        for h in self._exterior_hexes:
-            connecting_hexes: List[Hex] = [n for n in h.direct_neighbors if n and n.region_id != self.region_id]
-            if connecting_hexes:
-                random_hex: Hex = random.choice(connecting_hexes)
-                if random_hex.is_in_region():
-                    region: Region = regions_map[random_hex.region_id]
-                    region.remove_hex(random_hex)
-
-                else:
-                    random_hex.set_land()
-
-                random_hex.set_region(self.region_id)
-                newly_expanded.add(random_hex)
-
-        self.refresh(newly_expanded)
+        self.avg_elevation = avg_elevation / len(self.hexes)
+        self.avg_elevation = avg_moisture / len(self.hexes)
