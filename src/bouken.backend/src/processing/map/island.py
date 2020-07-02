@@ -1,10 +1,9 @@
 from typing import List, Tuple, Set
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
 from src.processing.map.hex import Hex
-from src.processing.map.island_type import IslandType
 
 
 class Island(object):
@@ -19,7 +18,6 @@ class Island(object):
         self.expanded_hexes: Set[Hex] = {start_hex}
         self.can_expand: bool = True
 
-        self.type: IslandType = IslandType.Grassland
         self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
 
@@ -47,7 +45,14 @@ class Island(object):
         """
         Get this island's exterior vertices defining its shape.
         """
-        return [(p[0], p[1]) for p in self.polygon.exterior.coords]
+        return [(int(p[0]), int(p[1])) for p in self.polygon.exterior.coords]
+
+    def get_centroid(self) -> Tuple[int, int]:
+        """
+        Get this island's polygon centroid position.
+        """
+        p: Point = self.polygon.centroid
+        return int(p.x), int(p.y)
 
     def expand(self, usable_hexes: List[Hex]):
         """

@@ -1,9 +1,12 @@
+import json
 import sys
 from typing import Optional
 
 from src.processing.map.layer_base import BaseLayer
+from src.processing.map.layer_feature import FeatureLayer
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.layer_regions import RegionLayer
+from src.util.compact_json_encoder import CompactJsonEncoder
 from src.util.constants import background_color, update_rate, frame_rate
 
 
@@ -24,25 +27,28 @@ class MapGenerator:
         self.max_region_expansions: int = max_region_expansions
         self.min_region_size_pct: float = min_region_size_pct
 
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, True)
+        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, False)
         self.island_layer: Optional[IslandLayer] = None
         self.region_layer: Optional[RegionLayer] = None
+        self.feature_layer: Optional[FeatureLayer] = None
 
         # self.generate()
-        self.test_display(realtime=True)
-        # self.test_display()
+        self.debug_render(realtime=True)
 
     def generate(self):
         acceptable: bool = False
         while not acceptable:
+            print('Generating base layer...')
             for n in range(self.terraform_iterations):
                 self.base_layer.terraform_land()
-            self.base_layer.clean_up()
+            self.base_layer.clean_up_land()
 
-            if not self.base_layer.is_acceptable():
+            acceptable = self.base_layer.is_acceptable()
+            if not acceptable:
                 self.base_layer.randomize()
                 continue
 
+            print('Generating island layer...')
             self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
 
             filling_islands: bool = True
@@ -50,6 +56,7 @@ class MapGenerator:
                 filling_islands = self.island_layer.discover()
             self.island_layer.clean_up(self.base_layer)
 
+        print('Generating region layer...')
         self.region_layer = RegionLayer(
             self.island_layer,
             self.min_region_expansions,
@@ -63,12 +70,21 @@ class MapGenerator:
             filling_regions = self.region_layer.discover(self.island_layer)
         self.region_layer.clean_up(self.base_layer, self.island_layer)
 
-    def serialize(self) -> str:
-        # Serialize Islands: type, polygon coordinates + area, regions
-        # Regions: type, polygon coordinates + area, centroid xy, distance from coast, elevation
-        return ''
+        print('Serializing...')
+        self.serialize()
 
-    def test_display(self, realtime=False):
+    def serialize(self) -> str:
+        serialized: dict = {
+            'dimensions': (self.base_layer.actual_width, self.base_layer.actual_height),
+            'islands': self.island_layer.serialize(),
+            'regions': self.region_layer.serialize(),
+            'hexes': self.base_layer.serialize()
+        }
+
+        string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
+        return string
+
+    def debug_render(self, realtime=False):
         import pygame
         from pygame import freetype
 
@@ -84,9 +100,11 @@ class MapGenerator:
         terraform_tick = 0
         island_tick = 0
         region_tick = 0
+        feature_tick = 0
         terraforming = True
         island_filling = False
         region_filling = False
+        feature_filling = False
 
         if not realtime:
             self.generate()
@@ -106,11 +124,11 @@ class MapGenerator:
                         self.terraform_iterations -= 1
 
                         if self.terraform_iterations == 0:
-                            self.base_layer.clean_up()
+                            self.base_layer.clean_up_land()
 
                             if self.base_layer.is_acceptable():
                                 self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
-                                self.base_layer.test_draw(surface)
+                                self.base_layer.debug_render(surface)
                                 terraforming = False
                                 island_filling = True
                             else:
@@ -122,8 +140,8 @@ class MapGenerator:
                         remaining: bool = self.island_layer.discover()
                         if not remaining:
                             self.island_layer.clean_up(self.base_layer)
-                            self.base_layer.test_draw(surface)
-                            self.island_layer.test_draw(surface)
+                            self.base_layer.debug_render(surface)
+                            self.island_layer.debug_render(surface)
                             island_filling = False
                             region_filling = True
                         else:
@@ -143,29 +161,40 @@ class MapGenerator:
                         remaining: bool = self.region_layer.discover(self.island_layer)
                         if not remaining:
                             self.region_layer.clean_up(self.base_layer, self.island_layer)
-                            self.base_layer.test_draw(surface)
-                            self.region_layer.test_draw(surface, font)
+                            self.base_layer.debug_render(surface)
+                            self.region_layer.debug_render(surface, font)
                             region_filling = False
+                            feature_filling = True
                         else:
                             region_tick = update_rate
 
+                        if not region_filling:
+                            self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
+                elif feature_filling:
+                    feature_tick -= 1
+                    if feature_tick <= 0:
+                        self.feature_layer.construct()
+
                 if terraforming:
-                    self.base_layer.test_draw(surface)
+                    self.base_layer.debug_render(surface)
                 elif island_filling:
-                    self.island_layer.test_draw(surface)
+                    self.island_layer.debug_render(surface)
                 elif region_filling:
-                    self.region_layer.test_draw(surface, font)
+                    self.island_layer.debug_render(surface)
+                    self.region_layer.debug_render(surface, font)
                 else:
-                    self.base_layer.test_draw(surface)
-                    self.region_layer.test_draw(surface, font)
+                    self.base_layer.debug_render(surface)
+                    # self.region_layer.debug_render(surface, font)
+                    self.feature_layer.debug_render(surface, font)
 
                 pygame.display.flip()
                 clock.tick(frame_rate)
             else:
-                self.base_layer.test_draw(surface)
-                self.island_layer.test_draw(surface)
-                self.region_layer.test_draw(surface, font)
-                self.base_layer.test_draw(surface)
+                self.base_layer.debug_render(surface)
+                self.island_layer.debug_render(surface)
+                self.base_layer.debug_render(surface)
+                self.region_layer.debug_render(surface, font)
+                self.feature_layer.debug_render(surface, font)
                 pygame.display.flip()
                 clock.tick(frame_rate)
 

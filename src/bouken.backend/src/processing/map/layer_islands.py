@@ -43,10 +43,26 @@ class IslandLayer(object):
     def keys(self) -> KeysView[int]:
         return self._island_key_to_island.keys()
 
-    def test_draw(self, surface: pygame.Surface):
+    def values(self) -> List[Island]:
+        return list(self._island_key_to_island.values())
+
+    def debug_render(self, surface: pygame.Surface):
         for island_key in self.keys():
             island: Island = self._island_key_to_island[island_key]
             pygame.draw.polygon(surface, island_color, island.get_vertices())
+
+    def serialize(self) -> dict:
+        island_map: dict = {}
+        for island_id in self.keys():
+            island: Island = self[island_id]
+            island_map[str(island_id)] = {
+                'region-ids': list(island.region_keys),
+                'area': island.area,
+                'centroid': island.get_centroid(),
+                'vertices': island.get_vertices(),
+            }
+
+        return island_map
 
     def discover(self) -> bool:
         """

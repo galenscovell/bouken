@@ -7,7 +7,7 @@ import pygame
 from src.processing.map.hex import Hex
 from src.processing.map.path_find_mode import PathfindMode
 from src.processing.map.terraform_state import TerraformState
-from src.util.constants import land_color, ocean_color
+from src.util.constants import coast_color
 from src.util.hex_utils import HexUtils
 
 
@@ -54,15 +54,18 @@ class BaseLayer(object):
         self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
         self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
+        hex_id: int = 0
         # Create even hexagons
         for x in range(0, self._columns, 2):
             for y in range(0, self._rows, 2):
-                self[x, y] = Hex(x, y, self._hex_size, self._pointy)
+                self[x, y] = Hex(hex_id, x, y, self._hex_size, self._pointy)
+                hex_id += 1
 
         # Create odd hexagons
         for x in range(1, self._columns, 2):
             for y in range(1, self._rows, 2):
-                self[x, y] = Hex(x, y, self._hex_size, self._pointy)
+                self[x, y] = Hex(hex_id, x, y, self._hex_size, self._pointy)
+                hex_id += 1
 
         # Set all neighbors
         for x in range(self._columns):
@@ -88,21 +91,25 @@ class BaseLayer(object):
             return self.grid[xy[0]][xy[1]]
         return None
 
-    def test_draw(self, surface: pygame.Surface):
+    def serialize(self) -> dict:
+        hexes: dict = {}
         for h in self.generator():
-            # if h.is_land():
-            #     color = land_color
-            # elif h.is_lake():
-            #     color = ocean_color
-            # else:
-            #     color = ocean_color
-            # pygame.draw.polygon(surface, color, h.vertices)
+            hexes[str(h.uuid)] = h.serialize()
 
-            if h.is_land():
-                # pygame.draw.polygon(surface, (h.elevation * 255, 40, 0), h.vertices)
-                pygame.draw.polygon(surface, (h.dryness * 255, h.dryness * 255, 30), h.vertices)
+        return hexes
+
+    def debug_render(self, surface: pygame.Surface):
+        for h in self.generator():
+            if h.is_land() or h.is_coast():
+                # elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
+                # pygame.draw.polygon(surface, elevation_color, h.vertices)
+                dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
+                pygame.draw.polygon(surface, dryness_color, h.vertices)
+            # elif h.is_coast():
+            #     pygame.draw.polygon(surface, coast_color, h.vertices)
             else:
-                pygame.draw.polygon(surface, (0, 40, 255 - (h.depth * 255)), h.vertices)
+                depth_color = (85 - (85 * h.depth), 125 - (125 * h.depth), 166 - (166 * h.depth))
+                pygame.draw.polygon(surface, depth_color, h.vertices)
 
     def total_usable_hexes(self) -> int:
         total: int = 0
@@ -176,7 +183,7 @@ class BaseLayer(object):
                 h.set_land()
 
     @staticmethod
-    def _expand_until_hit(h: Hex, hex_type: TerraformState) -> Optional[Hex]:
+    def _expand_until_hit(h: Hex, hex_types: List[TerraformState]) -> Optional[Hex]:
         """
         Expand from hex until a hex type is hit, returning the last hex before hit.
         """
@@ -187,7 +194,7 @@ class BaseLayer(object):
             for h in expanded:
                 for n in h.direct_neighbors:
                     if n:
-                        if n._state == hex_type:
+                        if n._state in hex_types:
                             return n
                         else:
                             newly_expanded.add(n)
@@ -197,9 +204,9 @@ class BaseLayer(object):
 
         return None
 
-    def _find_distance_to(self, h: Hex, hex_type: TerraformState) -> float:
+    def _find_distance_to(self, h: Hex, hex_types: List[TerraformState]) -> float:
         shortest_distance: float = float('inf')
-        end: Hex = self._expand_until_hit(h, hex_type)
+        end: Hex = self._expand_until_hit(h, hex_types)
 
         dx: float = h.x - end.x
         dy: float = h.y - end.y
@@ -221,8 +228,8 @@ class BaseLayer(object):
         Elevation is distance from ocean.
         """
         for h in self.generator():
-            if h.is_land():
-                elevation: float = self._find_distance_to(h, TerraformState.Ocean)
+            if h.is_land() or h.is_coast():
+                elevation: float = self._find_distance_to(h, [TerraformState.Ocean])
                 h.set_elevation(elevation)
             else:
                 h.elevation = 0
@@ -233,8 +240,8 @@ class BaseLayer(object):
         Depth is distance from land.
         """
         for h in self.generator():
-            if not h.is_land():
-                depth: float = self._find_distance_to(h, TerraformState.Land)
+            if h.is_ocean() or h.is_lake() or h.is_river():
+                depth: float = self._find_distance_to(h, [TerraformState.Land])
                 h.set_depth(depth)
             else:
                 h.depth = 0
@@ -245,14 +252,23 @@ class BaseLayer(object):
         Dryness is the distance from freshwater and ocean.
         """
         for h in self.generator():
-            if h.is_land():
-                distance_from_freshwater: float = self._find_distance_to(h, TerraformState.Lake)
+            if h.is_land() or h.is_coast():
+                distance_from_freshwater: float = self._find_distance_to(h, [TerraformState.Lake, TerraformState.River])
                 dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
                 if dryness > 1:
                     dryness = 1
                 h.set_dryness(dryness)
 
-    def clean_up(self):
+    def clean_up_lakes(self):
+        """
+        Remove stray patches of lakes across grid.
+        """
+        self._refresh_neighbors()
+        for h in self.generator():
+            if h.is_lake() and h.direct[TerraformState.Land] == 6:
+                h.set_land()
+
+    def clean_up_land(self):
         """
         Remove stray patches of land across grid.
         """

@@ -10,11 +10,11 @@ class Hex(object):
     """
     Defines a single hexagon cell.
     """
-
-    def __init__(self, x: int, y: int, size: int, pointy: bool):
+    def __init__(self, uuid: int, x: int, y: int, size: int, pointy: bool):
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
         self.y: int = y
+        self.uuid: int = uuid
         self._size: int = size
         self._pointy: bool = pointy
 
@@ -41,7 +41,8 @@ class Hex(object):
         self._on_island: bool = False
         self._in_region: bool = False
 
-        self._state_options: List[TerraformState] = [TerraformState.Land, TerraformState.Ocean, TerraformState.Lake]
+        self._state_options: List[TerraformState] = [
+            TerraformState.Land, TerraformState.Coast, TerraformState.Ocean, TerraformState.Lake, TerraformState.River]
 
         self.island_id: int = -1
         self.region_id: int = -1
@@ -60,12 +61,26 @@ class Hex(object):
     def __hash__(self):
         return hash((self.x, self.y))
 
-    def __copy__(self) -> Hex:
-        cpy: Hex = Hex(self.x, self.y, self._size, self._pointy)
-        cpy._state = self._state
-        cpy.direct_neighbors = self.direct_neighbors
-        cpy.secondary_neighbors = self.secondary_neighbors
-        return cpy
+    def serialize(self):
+        type_str: str = ''
+        if self.is_land():
+            type_str = 'land'
+        elif self.is_ocean():
+            type_str = 'ocean'
+        elif self.is_lake():
+            type_str = 'lake'
+        elif self.is_coast():
+            type_str = 'coast'
+        elif self.is_river():
+            type_str = 'river'
+
+        return {
+            'type': type_str,
+            'elevation': self.elevation,
+            'depth': self.depth,
+            'dryness': self.dryness,
+            'vertices': self.vertices
+        }
 
     def set_neighbor_states(self):
         self.direct = [0 for s in self._state_options]
@@ -92,11 +107,17 @@ class Hex(object):
     def set_land(self):
         self._state = TerraformState.Land
 
+    def set_coast(self):
+        self._state = TerraformState.Coast
+
     def set_ocean(self):
         self._state = TerraformState.Ocean
 
     def set_lake(self):
         self._state = TerraformState.Lake
+
+    def set_river(self):
+        self._state = TerraformState.River
 
     def set_island(self, island_id: int):
         self._on_island = True
@@ -117,11 +138,17 @@ class Hex(object):
     def is_land(self) -> bool:
         return self._state == TerraformState.Land
 
+    def is_coast(self) -> bool:
+        return self._state == TerraformState.Coast
+
     def is_ocean(self) -> bool:
         return self._state == TerraformState.Ocean
 
     def is_lake(self) -> bool:
         return self._state == TerraformState.Lake
+
+    def is_river(self) -> bool:
+        return self._state == TerraformState.River
 
     def is_on_island(self) -> bool:
         return self._on_island is True

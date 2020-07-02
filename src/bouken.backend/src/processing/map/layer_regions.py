@@ -1,5 +1,5 @@
 import random
-from typing import List, Optional, Dict, KeysView, Tuple
+from typing import List, Optional, Dict, KeysView, Tuple, Set
 
 import pygame
 from pygame import freetype
@@ -51,7 +51,10 @@ class RegionLayer(object):
     def keys(self) -> KeysView[int]:
         return self._region_key_to_region.keys()
 
-    def test_draw(self, surface: pygame.Surface, font: freetype.Font):
+    def values(self) -> List[Region]:
+        return list(self._region_key_to_region.values())
+
+    def debug_render(self, surface: pygame.Surface, font: freetype.Font):
         for region_key in self.keys():
             region: Region = self._region_key_to_region[region_key]
             region_center: Tuple[int, int] = region.get_centroid()
@@ -59,19 +62,40 @@ class RegionLayer(object):
             # pygame.draw.polygon(surface, (region.avg_elevation * 255, 40, 0), region.get_vertices())
             # pygame.draw.polygon(surface, (region.avg_dryness * 255, region.avg_dryness * 255, 40), region.get_vertices())
 
-            pygame.draw.polygon(surface, region.color, region.get_vertices())
-            # pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
+            pygame.draw.polygon(surface, region_center_color, region.get_vertices(), 4)
+            pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
 
-            label: str = f'{region_key}: '
-            if region.is_coastal:
-                label += 'C'
-            if region.is_bordering_lake:
-                label += 'L'
-            if region.is_secluded:
-                label += 'A'
-            if region.is_surrounded:
-                label += 'S'
-            font.render_to(surface, (region_center[0] - 48, region_center[1] + 12), label, region_center_color)
+            # label: str = f'{region_key}: '
+            # if region.is_coastal:
+            #     label += 'C'
+            # if region.is_bordering_lake:
+            #     label += 'L'
+            # if region.is_secluded:
+            #     label += 'A'
+            # if region.is_surrounded:
+            #     label += 'S'
+            # font.render_to(surface, (region_center[0] - 48, region_center[1] + 12), label, region_center_color)
+
+    def serialize(self) -> dict:
+        region_map: dict = {}
+        for region_id in self.keys():
+            region: Region = self[region_id]
+            region_map[str(region_id)] = {
+                'island-id': region.island_id,
+                'area': region.area,
+                'neighboring-region-ids': list(region.neighbor_region_ids),
+                'coastal': region.is_coastal,
+                'bordering-lake': region.is_bordering_lake,
+                'bordering-river': region.is_bordering_river,
+                'secluded': region.is_secluded,
+                'surrounded': region.is_surrounded,
+                'average-dryness': region.avg_dryness,
+                'average-elevation': region.avg_elevation,
+                'centroid': region.get_centroid(),
+                'vertices': region.get_vertices()
+            }
+
+        return region_map
 
     def discover(self, island_layer: IslandLayer) -> bool:
         """
@@ -120,6 +144,11 @@ class RegionLayer(object):
         self._refresh_regions()
 
         self._make_lakes(island_layer)
+        base_layer.clean_up_lakes()
+        self._set_coast_lines()
+        # self._make_rivers()
+
+        base_layer.set_elevation()
         base_layer.set_dryness()
         base_layer.set_depth()
 
@@ -176,17 +205,18 @@ class RegionLayer(object):
 
     def _make_lakes(self, island_layer: IslandLayer):
         """
-        Turn a random number of high elevation regions into lakes.
+        Turn a random number of moderate elevation regions into lakes, then create rivers flowing to the ocean.
         """
         made: int = 0
-        lakes_num: int = self._random.randint(1, 4)
+        lakes_num: int = self._random.randint(3, 5)
         high_elevation_regions_asc: List[Region] = sorted(
             self._region_key_to_region.values(), key=lambda r: r.avg_elevation)
 
+        high_elevation_regions_asc = high_elevation_regions_asc[:-3]
         while made < lakes_num and high_elevation_regions_asc:
             region = high_elevation_regions_asc.pop()
             if not region.is_coastal:
-                if len(region.hexes) >= 4:
+                if len(region.hexes) >= 6:
                     made += 1
 
                 island_key: int = region.island_id
@@ -204,7 +234,28 @@ class RegionLayer(object):
                 else:
                     island.refresh()
 
+                # Create river flowing down elevation to the ocean
+                start_hex: Hex = random.choice(list(region.exterior_hexes))
+                continuation_choices: List[Hex] = [
+                    h for h in start_hex.direct_neighbors
+                    if h and not h.region_id == region.region_id]
+
+                while continuation_choices:
+                    next_hex: Hex = random.choice(continuation_choices)
+                    next_hex.set_river()
+                    continuation_choices = [h for h in next_hex.direct_neighbors
+                                            if h and (h.elevation < next_hex.elevation or h.is_coast())]
+
                 del self[region.region_id]
                 self._refresh_regions()
 
         self._refresh_regions()
+
+    def _set_coast_lines(self):
+        """
+        Set coast lines for each region.
+        """
+        for region_key in self.keys():
+            region: Region = self[region_key]
+            if region.is_coastal:
+                region.set_coast_line()

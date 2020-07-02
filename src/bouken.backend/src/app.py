@@ -97,6 +97,6 @@ if __name__ == '__main__':
         min_island_size=14,
         min_region_expansions=2,
         max_region_expansions=5,
-        min_region_size_pct=0.015
+        min_region_size_pct=0.0125
     )
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')

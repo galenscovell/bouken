@@ -26,7 +26,8 @@ class Region(object):
         self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
 
-        self._exterior_hexes: Set[Hex] = set()
+        self.exterior_hexes: Set[Hex] = set()
+        self.coast_hexes: List[Hex] = []
         self.neighbor_region_ids: Set[int] = set()
         self.is_coastal: bool = False
         self.is_bordering_lake: bool = False
@@ -51,8 +52,8 @@ class Region(object):
         if h in self.hexes:
             self.hexes.remove(h)
 
-        if h in self._exterior_hexes:
-            self._exterior_hexes.remove(h)
+        if h in self.exterior_hexes:
+            self.exterior_hexes.remove(h)
 
         if h in self._expanded_hexes:
             self._expanded_hexes.remove(h)
@@ -76,7 +77,7 @@ class Region(object):
         """
         Get this region's exterior vertices defining its shape.
         """
-        return [(p[0], p[1]) for p in self.polygon.exterior.coords]
+        return [(int(p[0]), int(p[1])) for p in self.polygon.exterior.coords]
 
     def get_centroid(self) -> Tuple[int, int]:
         """
@@ -112,14 +113,25 @@ class Region(object):
 
             self.refresh_polygon(self._expanded_hexes)
 
+    def set_coast_line(self):
+        """
+        Set hexes directly next to the ocean as coast hexes.
+        """
+        for h in self.exterior_hexes:
+            for n in h.direct_neighbors:
+                if n and n.is_ocean():
+                    h.set_coast()
+                    self.coast_hexes.append(h)
+
     def refresh_details(self):
         """
         Find all regions connected to this region, its exterior hexes, and its overall status geographically.
         """
-        self._exterior_hexes.clear()
+        self.exterior_hexes.clear()
         self.neighbor_region_ids.clear()
         self.is_coastal: bool = False
         self.is_bordering_lake: bool = False
+        self.is_bordering_river: bool = False
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
 
@@ -136,9 +148,11 @@ class Region(object):
                         self.is_coastal = True
                     elif n.is_lake():
                         self.is_bordering_lake = True
+                    elif n.is_river():
+                        self.is_bordering_river = True
 
                     if n.region_id != self.region_id:
-                        self._exterior_hexes.add(h)
+                        self.exterior_hexes.add(h)
 
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded

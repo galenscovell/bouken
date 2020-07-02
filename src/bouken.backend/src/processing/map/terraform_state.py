@@ -6,5 +6,7 @@ class TerraformState(IntEnum):
     The possible states of a hex due to terraforming.
     """
     Land = 0
-    Ocean = 1
-    Lake = 2
+    Coast = 1
+    Ocean = 2
+    Lake = 3
+    River = 4
