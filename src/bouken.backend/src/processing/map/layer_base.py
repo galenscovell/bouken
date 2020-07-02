@@ -22,6 +22,7 @@ class BaseLayer(object):
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, pointy: bool = True):
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
+        self._path_find_mode: PathfindMode = PathfindMode.Euclidean
 
         self.initial_land_pct: float = initial_land_pct
         self._pointy: bool = pointy
@@ -71,7 +72,9 @@ class BaseLayer(object):
                     h.direct_neighbors = self._set_direct_neighbors(h)
                     h.secondary_neighbors = self._set_secondary_neighbors(h)
 
-        self.init()
+        self.max_distance: float = self._columns * self._rows / 240
+
+        self.randomize()
 
     def __len__(self) -> int:
         return self._columns * self._rows
@@ -87,23 +90,19 @@ class BaseLayer(object):
 
     def test_draw(self, surface: pygame.Surface):
         for h in self.generator():
+            # if h.is_land():
+            #     color = land_color
+            # elif h.is_lake():
+            #     color = ocean_color
+            # else:
+            #     color = ocean_color
+            # pygame.draw.polygon(surface, color, h.vertices)
+
             if h.is_land():
-                color = land_color
-            elif h.is_lake():
-                color = ocean_color
+                # pygame.draw.polygon(surface, (h.elevation * 255, 40, 0), h.vertices)
+                pygame.draw.polygon(surface, (h.dryness * 255, h.dryness * 255, 30), h.vertices)
             else:
-                color = ocean_color
-
-            pygame.draw.polygon(surface, color, h.vertices)
-
-            if h.is_land():
-                # heat_color: float = h.elevation * 20
-                heat_color: float = h.moisture * 5
-                if heat_color < 0:
-                    heat_color = 0
-
-                # pygame.draw.polygon(surface, (heat_color, 150, 0), h.vertices)
-                pygame.draw.polygon(surface, (heat_color, heat_color, 255 - heat_color), h.vertices)
+                pygame.draw.polygon(surface, (0, 40, 255 - (h.depth * 255)), h.vertices)
 
     def total_usable_hexes(self) -> int:
         total: int = 0
@@ -112,7 +111,7 @@ class BaseLayer(object):
 
         return total
 
-    def total_land_hexes(self) -> int:
+    def _total_land_hexes(self) -> int:
         total: int = 0
         for h in self.generator():
             if h.is_land():
@@ -121,7 +120,10 @@ class BaseLayer(object):
         return total
 
     def is_acceptable(self) -> bool:
-        return self.total_land_hexes() >= (self.total_usable_hexes() * 0.45)
+        """
+        Return whether or not the generated map has a reasonable amount of land.
+        """
+        return self._total_land_hexes() >= (self.total_usable_hexes() * 0.4)
 
     def _set_direct_neighbors(self, h: Hex) -> List[Optional[Hex]]:
         """
@@ -147,13 +149,13 @@ class BaseLayer(object):
 
                 yield h
 
-    def update_hex_states(self):
+    def _refresh_neighbors(self):
         """
         Update the neighbor states for all hexes in the grid.
         """
         [h.set_neighbor_states() for h in self.generator()]
 
-    def init(self):
+    def randomize(self):
         """
         Randomly distribute land hexes across grid.
         """
@@ -168,7 +170,7 @@ class BaseLayer(object):
         """
         Grow land hexes across grid.
         """
-        self.update_hex_states()
+        self._refresh_neighbors()
         for h in self.generator():
             if not h.is_land() and h.total[TerraformState.Land] > 6:
                 h.set_land()
@@ -181,7 +183,7 @@ class BaseLayer(object):
         ocean_hit: bool = False
         expanded: Set[Hex] = {h}
         newly_expanded: Set[Hex] = set()
-        while not ocean_hit:
+        while not ocean_hit and expanded:
             for h in expanded:
                 for n in h.direct_neighbors:
                     if n:
@@ -195,55 +197,73 @@ class BaseLayer(object):
 
         return None
 
-    def find_distance_to_ocean(self, mode: PathfindMode):
+    def _find_distance_to(self, h: Hex, hex_type: TerraformState) -> float:
+        shortest_distance: float = float('inf')
+        end: Hex = self._expand_until_hit(h, hex_type)
+
+        dx: float = h.x - end.x
+        dy: float = h.y - end.y
+        if self._path_find_mode == PathfindMode.Manhattan:
+            distance = max(math.fabs(dx), math.fabs(dy))
+        elif self._path_find_mode == PathfindMode.Euclidean:
+            distance = math.sqrt(dx * dx + dy * dy)
+        else:
+            distance = max(math.fabs(dx), math.fabs(dy))
+
+        if distance < shortest_distance:
+            shortest_distance = distance
+
+        return self.normalize_distance(shortest_distance)
+
+    def set_elevation(self):
         """
-        Expand out from each hex until ocean is hit to determine distance and elevation.
-        """
-        for h in self.generator():
-            shortest_distance: float = float('inf')
-            end: Hex = self._expand_until_hit(h, TerraformState.Ocean)
-
-            dx: float = h.x - end.x
-            dy: float = h.y - end.y
-            if mode == PathfindMode.Manhattan:
-                distance = max(math.fabs(dx), math.fabs(dy))
-            elif mode == PathfindMode.Euclidean:
-                distance = math.sqrt(dx * dx + dy * dy)
-            else:
-                distance = max(math.fabs(dx), math.fabs(dy))
-
-            if distance < shortest_distance:
-                shortest_distance = distance
-
-            h.set_elevation(shortest_distance)
-
-    def find_distance_to_lake(self, mode: PathfindMode):
-        """
-        Expand out from each hex until lake is hit to determine distance and elevation.
+        Expand out from each hex until ocean is hit to determine elevation grade.
+        Elevation is distance from ocean.
         """
         for h in self.generator():
-            shortest_distance: float = float('inf')
-            end: Hex = self._expand_until_hit(h, TerraformState.Lake)
-
-            dx: float = h.x - end.x
-            dy: float = h.y - end.y
-            if mode == PathfindMode.Manhattan:
-                distance = max(math.fabs(dx), math.fabs(dy))
-            elif mode == PathfindMode.Euclidean:
-                distance = math.sqrt(dx * dx + dy * dy)
+            if h.is_land():
+                elevation: float = self._find_distance_to(h, TerraformState.Ocean)
+                h.set_elevation(elevation)
             else:
-                distance = max(math.fabs(dx), math.fabs(dy))
+                h.elevation = 0
 
-            if distance < shortest_distance:
-                shortest_distance = distance
+    def set_depth(self):
+        """
+        Expand out from each hex until land is hit to determine depth grade.
+        Depth is distance from land.
+        """
+        for h in self.generator():
+            if not h.is_land():
+                depth: float = self._find_distance_to(h, TerraformState.Land)
+                h.set_depth(depth)
+            else:
+                h.depth = 0
 
-            h.set_moisture(shortest_distance)
+    def set_dryness(self):
+        """
+        Expand out from each hex until lake is hit to determine moisture grade.
+        Dryness is the distance from freshwater and ocean.
+        """
+        for h in self.generator():
+            if h.is_land():
+                distance_from_freshwater: float = self._find_distance_to(h, TerraformState.Lake)
+                dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
+                if dryness > 1:
+                    dryness = 1
+                h.set_dryness(dryness)
 
     def clean_up(self):
         """
         Remove stray patches of land across grid.
         """
-        self.update_hex_states()
+        self._refresh_neighbors()
         for h in self.generator():
             if h.is_land() and h.direct[TerraformState.Land] < 4:
                 h.set_ocean()
+
+    def normalize_distance(self, value: float) -> float:
+        normalized: float = value / self.max_distance
+        if normalized > 1:
+            normalized = 1
+
+        return normalized

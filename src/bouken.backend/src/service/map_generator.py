@@ -4,7 +4,6 @@ from typing import Optional
 from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.layer_regions import RegionLayer
-from src.processing.map.path_find_mode import PathfindMode
 from src.util.constants import background_color, update_rate, frame_rate
 
 
@@ -41,7 +40,7 @@ class MapGenerator:
             self.base_layer.clean_up()
 
             if not self.base_layer.is_acceptable():
-                self.base_layer.init()
+                self.base_layer.randomize()
                 continue
 
             self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
@@ -62,10 +61,7 @@ class MapGenerator:
         filling_regions: bool = True
         while filling_regions:
             filling_regions = self.region_layer.discover(self.island_layer)
-        self.region_layer.clean_up(self.island_layer)
-
-        self.base_layer.find_distance_to_ocean(PathfindMode.Manhattan)
-        self.base_layer.find_distance_to_lake(PathfindMode.Manhattan)
+        self.region_layer.clean_up(self.base_layer, self.island_layer)
 
     def serialize(self) -> str:
         # Serialize Islands: type, polygon coordinates + area, regions
@@ -118,7 +114,7 @@ class MapGenerator:
                                 terraforming = False
                                 island_filling = True
                             else:
-                                self.base_layer.init()
+                                self.base_layer.randomize()
                                 self.terraform_iterations = initial_terraform_iterations
                 elif island_filling:
                     island_tick -= 1
@@ -146,9 +142,7 @@ class MapGenerator:
                     if region_tick <= 0:
                         remaining: bool = self.region_layer.discover(self.island_layer)
                         if not remaining:
-                            self.region_layer.clean_up(self.island_layer)
-                            self.base_layer.find_distance_to_ocean(PathfindMode.Manhattan)
-                            self.base_layer.find_distance_to_lake(PathfindMode.Manhattan)
+                            self.region_layer.clean_up(self.base_layer, self.island_layer)
                             self.base_layer.test_draw(surface)
                             self.region_layer.test_draw(surface, font)
                             region_filling = False
@@ -163,6 +157,7 @@ class MapGenerator:
                     self.region_layer.test_draw(surface, font)
                 else:
                     self.base_layer.test_draw(surface)
+                    self.region_layer.test_draw(surface, font)
 
                 pygame.display.flip()
                 clock.tick(frame_rate)

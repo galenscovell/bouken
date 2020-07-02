@@ -95,8 +95,8 @@ if __name__ == '__main__':
         initial_land_pct=0.3,
         terraform_iterations=30,
         min_island_size=14,
-        min_region_expansions=1,
-        max_region_expansions=4,
-        min_region_size_pct=0.0175
+        min_region_expansions=2,
+        max_region_expansions=5,
+        min_region_size_pct=0.015
     )
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')

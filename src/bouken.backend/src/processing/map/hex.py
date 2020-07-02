@@ -45,8 +45,9 @@ class Hex(object):
 
         self.island_id: int = -1
         self.region_id: int = -1
-        self.elevation: float = 0
-        self.moisture: float = 0
+        self.elevation: float = 0.0
+        self.depth: float = 0.0
+        self.dryness: float = 0.0
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
@@ -82,8 +83,11 @@ class Hex(object):
     def set_elevation(self, elevation: float):
         self.elevation = elevation
 
-    def set_moisture(self, moisture: float):
-        self.moisture = moisture
+    def set_depth(self, depth: float):
+        self.depth = depth
+
+    def set_dryness(self, moisture: float):
+        self.dryness = moisture
 
     def set_land(self):
         self._state = TerraformState.Land

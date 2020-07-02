@@ -32,8 +32,8 @@ class Region(object):
         self.is_bordering_lake: bool = False
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
-        self.avg_elevation: float = 0
-        self.avg_moisture: float = 0
+        self.avg_elevation: float = 0.0
+        self.avg_dryness: float = 0.0
 
         start_hex.set_region(self.region_id)
 
@@ -57,7 +57,7 @@ class Region(object):
         if h in self._expanded_hexes:
             self._expanded_hexes.remove(h)
 
-    def refresh(self, to_join_hexes=None):
+    def refresh_polygon(self, to_join_hexes=None):
         """
         Refresh this region's polygon shape and area.
         """
@@ -110,9 +110,9 @@ class Region(object):
                 self._expanded_hexes.add(h)
                 self.add_hex(h)
 
-            self.refresh(self._expanded_hexes)
+            self.refresh_polygon(self._expanded_hexes)
 
-    def describe(self):
+    def refresh_details(self):
         """
         Find all regions connected to this region, its exterior hexes, and its overall status geographically.
         """
@@ -123,11 +123,11 @@ class Region(object):
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
 
-        avg_elevation: float = 0
-        avg_moisture: float = 0
+        avg_elevation: float = 0.0
+        avg_dryness: float = 0.0
         for h in self.hexes:
             avg_elevation += h.elevation
-            avg_moisture += h.moisture
+            avg_dryness += h.dryness
             for n in h.direct_neighbors:
                 if n:
                     if n.is_in_region() and n.region_id != self.region_id:
@@ -143,4 +143,4 @@ class Region(object):
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded
         self.avg_elevation = avg_elevation / len(self.hexes)
-        self.avg_elevation = avg_moisture / len(self.hexes)
+        self.avg_dryness = avg_dryness / len(self.hexes)

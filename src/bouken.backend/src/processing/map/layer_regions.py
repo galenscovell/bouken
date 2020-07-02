@@ -6,6 +6,7 @@ from pygame import freetype
 
 from src.processing.map.hex import Hex
 from src.processing.map.island import Island
+from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.region import Region
 from src.util.constants import region_center_color
@@ -54,6 +55,10 @@ class RegionLayer(object):
         for region_key in self.keys():
             region: Region = self._region_key_to_region[region_key]
             region_center: Tuple[int, int] = region.get_centroid()
+
+            # pygame.draw.polygon(surface, (region.avg_elevation * 255, 40, 0), region.get_vertices())
+            # pygame.draw.polygon(surface, (region.avg_dryness * 255, region.avg_dryness * 255, 40), region.get_vertices())
+
             pygame.draw.polygon(surface, region.color, region.get_vertices())
             # pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
 
@@ -66,8 +71,7 @@ class RegionLayer(object):
                 label += 'A'
             if region.is_surrounded:
                 label += 'S'
-
-            font.render_to(surface, (region_center[0] - 12, region_center[1]), label, region_center_color)
+            font.render_to(surface, (region_center[0] - 48, region_center[1] + 12), label, region_center_color)
 
     def discover(self, island_layer: IslandLayer) -> bool:
         """
@@ -107,12 +111,26 @@ class RegionLayer(object):
 
             self._current_region = None
 
-    def update_neighbors(self):
+    def clean_up(self, base_layer: BaseLayer, island_layer: IslandLayer):
         """
-        Find and set the neighboring regions for each region.
+        Ensure that final regions are a minimum size.
+        If a region is under the threshold either merge it with neighbors or turn it into water.
+        """
+        base_layer.set_elevation()
+        self._refresh_regions()
+
+        self._make_lakes(island_layer)
+        base_layer.set_dryness()
+        base_layer.set_depth()
+
+        self._merge_regions(island_layer)
+
+    def _refresh_regions(self):
+        """
+        Refresh details for every region.
         """
         for region_key in self.keys():
-            self[region_key].describe()
+            self[region_key].refresh_details()
 
     def _get_regions_under_threshold(self) -> List[int]:
         """
@@ -126,22 +144,13 @@ class RegionLayer(object):
 
         return to_remove
 
-    def clean_up(self, island_layer: IslandLayer):
-        """
-        Ensure that final regions are a minimum size.
-        If a region is under the threshold either merge it with neighbors or turn it into water.
-        """
-        self._merge_regions(island_layer)
-        self._make_lakes(island_layer)
-        # self._randomize_edges()
-
     def _merge_regions(self, island_layer: IslandLayer):
         """
-        If region is under threshold, merge it with its smallest neighboring region.
+        If region is under size threshold, merge it with its smallest neighboring region.
         """
         to_remove: List[int] = self._get_regions_under_threshold()
         while len(to_remove) > 0:
-            self.update_neighbors()
+            self._refresh_regions()
             region_key: int = to_remove[-1]
             region = self[region_key]
             island_key: int = region.island_id
@@ -157,40 +166,45 @@ class RegionLayer(object):
                 for h in region.hexes:
                     smallest_neighbor.add_hex(h)
 
-                smallest_neighbor.refresh(region.hexes)
+                smallest_neighbor.refresh_polygon(region.hexes)
                 island.region_keys.remove(region_key)
                 del self[region_key]
 
             to_remove.remove(region_key)
-        self.update_neighbors()
+
+        self._refresh_regions()
 
     def _make_lakes(self, island_layer: IslandLayer):
         """
-        Turn random regions into water.
+        Turn a random number of high elevation regions into lakes.
         """
-        lakes_num: int = self._random.randint(2, 5)
-        for n in range(lakes_num):
-            self.update_neighbors()
-            region_key: int = self._random.choice(list(self.keys()))
-            region = self[region_key]
-            island_key: int = region.island_id
-            island: Island = island_layer[island_key]
+        made: int = 0
+        lakes_num: int = self._random.randint(1, 4)
+        high_elevation_regions_asc: List[Region] = sorted(
+            self._region_key_to_region.values(), key=lambda r: r.avg_elevation)
 
-            for h in region.hexes:
-                h.unset_region()
-                h.unset_island()
+        while made < lakes_num and high_elevation_regions_asc:
+            region = high_elevation_regions_asc.pop()
+            if not region.is_coastal:
+                if len(region.hexes) >= 4:
+                    made += 1
 
-                if region.is_coastal:
+                island_key: int = region.island_id
+                island: Island = island_layer[island_key]
+
+                for h in region.hexes:
+                    h.unset_region()
+                    h.unset_island()
                     h.set_lake()
+
+                # If island is now empty (no regions), delete it
+                island.region_keys.remove(region.region_id)
+                if not island.region_keys:
+                    del island_layer[island_key]
                 else:
-                    h.set_lake()
+                    island.refresh()
 
-            # If island is now empty (no regions), delete it
-            island.region_keys.remove(region_key)
-            if not island.region_keys:
-                del island_layer[island_key]
-            else:
-                island.refresh()
+                del self[region.region_id]
+                self._refresh_regions()
 
-            del self[region_key]
-        self.update_neighbors()
+        self._refresh_regions()
