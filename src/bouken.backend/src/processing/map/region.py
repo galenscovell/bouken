@@ -6,18 +6,21 @@ from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
 from src.processing.map.hex import Hex
+from src.processing.map.terraform_state import TerraformState
 
 
 class Region(object):
     """
     Defines a political region of a map, composed of multiple hexes.
     """
-    def __init__(self, region_id: int, island_id: int, start_hex: Hex, color: Tuple[int, int, int], expansions: int):
+    def __init__(self, region_id: int, island_id: int, start_hex: Hex, expansions: int):
         self.region_id: int = region_id
         self.island_id: int = island_id
-        self.start_hex: Hex = start_hex
         self.hexes: Set[Hex] = {start_hex}
-        self.color: Tuple[int, int, int] = color
+
+        self.exterior_hexes: Set[Hex] = set()
+        self.coast_hexes: Set[Hex] = set()
+        self.neighbor_region_ids: Set[int] = set()
 
         self._expanded_hexes: Set[Hex] = {start_hex}
         self._expansions: int = expansions
@@ -26,13 +29,12 @@ class Region(object):
         self.polygon: Polygon = Polygon(start_hex.vertices)
         self.area: float = self.polygon.area
 
-        self.exterior_hexes: Set[Hex] = set()
-        self.coast_hexes: List[Hex] = []
-        self.neighbor_region_ids: Set[int] = set()
         self.is_coastal: bool = False
-        self.is_bordering_lake: bool = False
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
+        self.near_lake: bool = False
+        self.near_river: bool = False
+
         self.avg_elevation: float = 0.0
         self.avg_dryness: float = 0.0
 
@@ -45,20 +47,7 @@ class Region(object):
         h.set_region(self.region_id)
         self.hexes.add(h)
 
-    def remove_hex(self, h: Hex):
-        """
-        Remove all references of a hex for this region.
-        """
-        if h in self.hexes:
-            self.hexes.remove(h)
-
-        if h in self.exterior_hexes:
-            self.exterior_hexes.remove(h)
-
-        if h in self._expanded_hexes:
-            self._expanded_hexes.remove(h)
-
-    def refresh_polygon(self, to_join_hexes=None):
+    def update_shape(self, to_join_hexes=None):
         """
         Refresh this region's polygon shape and area.
         """
@@ -71,7 +60,7 @@ class Region(object):
                 to_join.append(Polygon(h.vertices))
 
         self.polygon = unary_union(to_join)
-        self.area: float = self.polygon.area
+        self.area = self.polygon.area
 
     def get_vertices(self) -> List[Tuple[int, int]]:
         """
@@ -99,7 +88,7 @@ class Region(object):
         newly_expanded: Set[Hex] = set()
         for h in self._expanded_hexes:
             for n in h.direct_neighbors:
-                if n and n in usable_hexes and not n.is_in_region():
+                if n in usable_hexes and not n.is_in_region():
                     newly_expanded.add(n)
 
         if not newly_expanded:
@@ -111,48 +100,55 @@ class Region(object):
                 self._expanded_hexes.add(h)
                 self.add_hex(h)
 
-            self.refresh_polygon(self._expanded_hexes)
+            self.update_shape(self._expanded_hexes)
 
-    def set_coast_line(self):
+    def update_hex_neighbors(self):
         """
-        Set hexes directly next to the ocean as coast hexes.
+        Update the neighbor states for all hexes in the region.
         """
-        for h in self.exterior_hexes:
-            for n in h.direct_neighbors:
-                if n and n.is_ocean():
-                    h.set_coast()
-                    self.coast_hexes.append(h)
+        [h.set_neighbor_states() for h in self.hexes]
 
-    def refresh_details(self):
+    def set_exterior_details(self):
         """
-        Find all regions connected to this region, its exterior hexes, and its overall status geographically.
+        Set hexes forming exterior perimeter as well as coast and neighboring region ids.
         """
         self.exterior_hexes.clear()
         self.neighbor_region_ids.clear()
+        self.coast_hexes.clear()
+
+        for h in self.hexes:
+            for n in h.direct_neighbors:
+                if n.region_id != self.region_id:
+                    if n.is_in_region():
+                        self.neighbor_region_ids.add(n.region_id)
+
+                    if n.is_ocean():
+                        h.set_coast()
+                        self.coast_hexes.add(h)
+
+                    self.exterior_hexes.add(h)
+
+    def set_geographic_details(self):
+        """
+        Find thi region's exterior hexes and its overall status geographically.
+        """
         self.is_coastal: bool = False
-        self.is_bordering_lake: bool = False
-        self.is_bordering_river: bool = False
         self.is_secluded: bool = False
         self.is_surrounded: bool = False
+        self.near_lake: bool = False
+        self.near_river: bool = False
 
         avg_elevation: float = 0.0
         avg_dryness: float = 0.0
         for h in self.hexes:
             avg_elevation += h.elevation
             avg_dryness += h.dryness
-            for n in h.direct_neighbors:
-                if n:
-                    if n.is_in_region() and n.region_id != self.region_id:
-                        self.neighbor_region_ids.add(n.region_id)
-                    elif n.is_ocean():
-                        self.is_coastal = True
-                    elif n.is_lake():
-                        self.is_bordering_lake = True
-                    elif n.is_river():
-                        self.is_bordering_river = True
-
-                    if n.region_id != self.region_id:
-                        self.exterior_hexes.add(h)
+            if h.direct[TerraformState.Ocean] > 0:
+                self.is_coastal = True
+            if h.direct[TerraformState.Lake] > 0:
+                self.near_lake = True
+            if h.direct[TerraformState.River] > 0:
+                self.near_river = True
 
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded

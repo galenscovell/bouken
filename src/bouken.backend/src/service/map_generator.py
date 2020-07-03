@@ -40,10 +40,10 @@ class MapGenerator:
         while not acceptable:
             print('Generating base layer...')
             for n in range(self.terraform_iterations):
-                self.base_layer.terraform_land()
-            self.base_layer.clean_up_land()
+                self.base_layer.terraform()
+            self.base_layer.finalize()
 
-            acceptable = self.base_layer.is_acceptable()
+            acceptable = self.base_layer.has_enough_land()
             if not acceptable:
                 self.base_layer.randomize()
                 continue
@@ -65,13 +65,20 @@ class MapGenerator:
             self.base_layer.total_usable_hexes()
         )
 
+        print('Placing freshwater...')
+        self.region_layer.place_freshwater(self.base_layer)
+
         filling_regions: bool = True
         while filling_regions:
             filling_regions = self.region_layer.discover(self.island_layer)
-        self.region_layer.clean_up(self.base_layer, self.island_layer)
+        self.region_layer.establish_regions_to_merge()
+
+        merging: bool = True
+        while merging:
+            merging = self.region_layer.merge(self.island_layer)
 
         print('Serializing...')
-        self.serialize()
+        # self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {
@@ -97,13 +104,11 @@ class MapGenerator:
         surface.fill(background_color)
 
         initial_terraform_iterations: int = self.terraform_iterations
-        terraform_tick = 0
-        island_tick = 0
-        region_tick = 0
-        feature_tick = 0
+        update_tick = 0
         terraforming = True
         island_filling = False
         region_filling = False
+        merging = False
         feature_filling = False
 
         if not realtime:
@@ -116,17 +121,18 @@ class MapGenerator:
                 if event.type == pygame.QUIT:
                     running = False
 
-                if self.terraform_iterations > 0:
-                    terraform_tick -= 1
-                    if terraform_tick <= 0:
-                        self.base_layer.terraform_land()
-                        terraform_tick = update_rate
+                update_tick -= 1
+                if update_tick <= 0:
+                    update_tick = update_rate
+
+                    if self.terraform_iterations > 0:
+                        self.base_layer.terraform()
                         self.terraform_iterations -= 1
 
                         if self.terraform_iterations == 0:
-                            self.base_layer.clean_up_land()
+                            self.base_layer.finalize()
 
-                            if self.base_layer.is_acceptable():
+                            if self.base_layer.has_enough_land():
                                 self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
                                 self.base_layer.debug_render(surface)
                                 terraforming = False
@@ -134,18 +140,12 @@ class MapGenerator:
                             else:
                                 self.base_layer.randomize()
                                 self.terraform_iterations = initial_terraform_iterations
-                elif island_filling:
-                    island_tick -= 1
-                    if island_tick <= 0:
+                    elif island_filling:
                         remaining: bool = self.island_layer.discover()
                         if not remaining:
                             self.island_layer.clean_up(self.base_layer)
-                            self.base_layer.debug_render(surface)
-                            self.island_layer.debug_render(surface)
                             island_filling = False
                             region_filling = True
-                        else:
-                            island_tick = update_rate
 
                         if not island_filling:
                             self.region_layer = RegionLayer(
@@ -155,32 +155,29 @@ class MapGenerator:
                                 self.min_region_size_pct,
                                 self.base_layer.total_usable_hexes()
                             )
-                elif region_filling:
-                    region_tick -= 1
-                    if region_tick <= 0:
-                        remaining: bool = self.region_layer.discover(self.island_layer)
-                        if not remaining:
-                            self.region_layer.clean_up(self.base_layer, self.island_layer)
-                            self.base_layer.debug_render(surface)
-                            self.region_layer.debug_render(surface, font)
-                            region_filling = False
-                            feature_filling = True
-                        else:
-                            region_tick = update_rate
 
-                        if not region_filling:
+                            self.region_layer.place_freshwater(self.base_layer)
+                    elif region_filling:
+                        discovering: bool = self.region_layer.discover(self.island_layer)
+                        if not discovering:
+                            self.region_layer.establish_regions_to_merge()
+                            region_filling = False
+                            merging = True
+                    elif merging:
+                        merging: bool = self.region_layer.merge(self.island_layer)
+                        if not merging:
                             self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
-                elif feature_filling:
-                    feature_tick -= 1
-                    if feature_tick <= 0:
+                            merging = False
+                            feature_filling = True
+                    elif feature_filling:
                         self.feature_layer.construct()
 
                 if terraforming:
                     self.base_layer.debug_render(surface)
                 elif island_filling:
                     self.island_layer.debug_render(surface)
-                elif region_filling:
-                    self.island_layer.debug_render(surface)
+                elif region_filling or merging:
+                    self.base_layer.debug_render(surface)
                     self.region_layer.debug_render(surface, font)
                 else:
                     self.base_layer.debug_render(surface)

@@ -3,33 +3,23 @@ from __future__ import annotations
 from typing import List, Tuple
 
 from src.processing.map.terraform_state import TerraformState
-from src.util.hex_utils import HexUtils
 
 
 class Hex(object):
     """
     Defines a single hexagon cell.
     """
-    def __init__(self, uuid: int, x: int, y: int, size: int, pointy: bool):
+    def __init__(self, uuid: int, x: int, y: int):
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
         self.y: int = y
         self.uuid: int = uuid
-        self._size: int = size
-        self._pointy: bool = pointy
 
-        self._width_diameter, self._height_diameter, self._vertical_spacing, self._horizontal_spacing = \
-            HexUtils.calculate_layout(size, pointy)
-
-        self._width_radius: int = int(self._width_diameter / 2)
-        self._height_radius: int = int(self._height_diameter / 2)
-
-        self.pixel_center_x: int = self._width_radius + self.x * self._horizontal_spacing
-        self.pixel_center_y: int = self._height_radius + self.y * self._vertical_spacing
+        self.pixel_center_x: int = 0
+        self.pixel_center_y: int = 0
 
         # Define points of hex cell, connected in order
-        self.vertices: List[Tuple[int, int]] = HexUtils.calculate_hex_corners(
-            self.pixel_center_x, self.pixel_center_y, size, pointy)
+        self.vertices: List[Tuple[int, int]] = []
 
         self.direct_neighbors: List[Hex] = []
         self.secondary_neighbors: List[Hex] = []
@@ -46,16 +36,23 @@ class Hex(object):
 
         self.island_id: int = -1
         self.region_id: int = -1
-        self.elevation: float = 0.0
-        self.depth: float = 0.0
-        self.dryness: float = 0.0
+        self.elevation: float = 0
+        self.depth: float = 0
+        self.dryness: float = 0
+
+    def construct(self, width_diameter: int, height_diameter: int, horizontal_spacing: int, vertical_spacing: int):
+        width_radius: int = int(width_diameter / 2)
+        height_radius: int = int(height_diameter / 2)
+
+        self.pixel_center_x = width_radius + self.x * horizontal_spacing
+        self.pixel_center_y = height_radius + self.y * vertical_spacing
 
     def __str__(self) -> str:
         return f'[{self.x}, {self.y}]'
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Hex):
-            return self.x == other.x and self.y == other.y
+            return self.uuid == other.uuid
         return False
 
     def __hash__(self):
@@ -85,24 +82,13 @@ class Hex(object):
     def set_neighbor_states(self):
         self.direct = [0 for s in self._state_options]
         for h in self.direct_neighbors:
-            if h:
-                self.direct[h._state] += 1
+            self.direct[h._state] += 1
 
         self.secondary = [0 for s in self._state_options]
         for h in self.secondary_neighbors:
-            if h:
-                self.secondary[h._state] += 1
+            self.secondary[h._state] += 1
 
         self.total = [self.direct[n] + self.secondary[n] for n in range(len(self._state_options))]
-
-    def set_elevation(self, elevation: float):
-        self.elevation = elevation
-
-    def set_depth(self, depth: float):
-        self.depth = depth
-
-    def set_dryness(self, moisture: float):
-        self.dryness = moisture
 
     def set_land(self):
         self._state = TerraformState.Land

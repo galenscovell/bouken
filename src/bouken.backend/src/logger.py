@@ -1,7 +1,5 @@
 """
 Handles all logging for service.
-
-@author GalenS <galen.scovell@payscale.com>
 """
 
 import logging.handlers

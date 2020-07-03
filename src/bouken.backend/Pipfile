@@ -13,6 +13,7 @@ starlette = "*"
 redis = "*"
 pygame = "*"
 shapely = "*"
+cprofilev = "*"
 
 [requires]
 python_version = "3.8"

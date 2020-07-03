@@ -7,7 +7,6 @@ import pygame
 from src.processing.map.hex import Hex
 from src.processing.map.path_find_mode import PathfindMode
 from src.processing.map.terraform_state import TerraformState
-from src.util.constants import coast_color
 from src.util.hex_utils import HexUtils
 
 
@@ -23,11 +22,9 @@ class BaseLayer(object):
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
         self._path_find_mode: PathfindMode = PathfindMode.Euclidean
-
         self.initial_land_pct: float = initial_land_pct
-        self._pointy: bool = pointy
-        self._hex_size: int = hex_size
-        width_diameter, height_diameter, vertical_spacing, horizontal_spacing = \
+
+        width_diameter, height_diameter, horizontal_spacing, vertical_spacing = \
             HexUtils.calculate_layout(hex_size, pointy)
 
         self._columns: int = int(self._pixel_width // (width_diameter / 2))
@@ -42,8 +39,6 @@ class BaseLayer(object):
             self._direct_neighbors = ((1, 1), (-1, -1), (1, -1), (-1, 1), (0, 2), (0, -2))
             self._secondary_neighbors = ((2, 0), (-2, 0), (1, 3), (-1, 3), (1, -3), (-1, -3))
 
-        self._random: random.Random = random.Random()
-
         # Init grid as 2D array of None
         self.grid: List[List[Optional[Hex]]] = []
         for x in range(self._columns):
@@ -51,20 +46,17 @@ class BaseLayer(object):
             for y in range(self._rows):
                 self.grid[x].append(None)
 
-        self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
-        self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
-
         hex_id: int = 0
         # Create even hexagons
         for x in range(0, self._columns, 2):
             for y in range(0, self._rows, 2):
-                self[x, y] = Hex(hex_id, x, y, self._hex_size, self._pointy)
+                self[x, y] = Hex(hex_id, x, y)
                 hex_id += 1
 
         # Create odd hexagons
         for x in range(1, self._columns, 2):
             for y in range(1, self._rows, 2):
-                self[x, y] = Hex(hex_id, x, y, self._hex_size, self._pointy)
+                self[x, y] = Hex(hex_id, x, y)
                 hex_id += 1
 
         # Set all neighbors
@@ -75,7 +67,18 @@ class BaseLayer(object):
                     h.direct_neighbors = self._set_direct_neighbors(h)
                     h.secondary_neighbors = self._set_secondary_neighbors(h)
 
-        self.max_distance: float = self._columns * self._rows / 240
+        # Set hex properties
+        for h in self.generator():
+            h.construct(width_diameter, height_diameter, horizontal_spacing, vertical_spacing)
+            h.vertices = HexUtils.calculate_hex_corners(h.pixel_center_x, h.pixel_center_y, hex_size, pointy)
+
+        self._random: random.Random = random.Random()
+
+        # Set max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes
+        self._max_distance: float = (self._columns * self._rows) / 160
+
+        self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
+        self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
         self.randomize()
 
@@ -101,10 +104,10 @@ class BaseLayer(object):
     def debug_render(self, surface: pygame.Surface):
         for h in self.generator():
             if h.is_land() or h.is_coast():
-                # elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
-                # pygame.draw.polygon(surface, elevation_color, h.vertices)
-                dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
-                pygame.draw.polygon(surface, dryness_color, h.vertices)
+                elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
+                pygame.draw.polygon(surface, elevation_color, h.vertices)
+                # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
+                # pygame.draw.polygon(surface, dryness_color, h.vertices)
             # elif h.is_coast():
             #     pygame.draw.polygon(surface, coast_color, h.vertices)
             else:
@@ -126,23 +129,31 @@ class BaseLayer(object):
 
         return total
 
-    def is_acceptable(self) -> bool:
+    def has_enough_land(self) -> bool:
         """
         Return whether or not the generated map has a reasonable amount of land.
         """
-        return self._total_land_hexes() >= (self.total_usable_hexes() * 0.4)
+        return self._total_land_hexes() >= (self.total_usable_hexes() * 0.45)
 
     def _set_direct_neighbors(self, h: Hex) -> List[Optional[Hex]]:
         """
         Return the 6 direct neighbours of a hex.
         """
-        return [self[h.x + dx, h.y + dy] for dx, dy in self._direct_neighbors]
+        delta: List[Tuple[int, int]] = [(h.x + dx, h.y + dy) for dx, dy in self._direct_neighbors]
+        return [self[x, y] for x, y in delta if x > -1 and y > -1 and self[x, y]]
 
     def _set_secondary_neighbors(self, h: Hex) -> List[Optional[Hex]]:
         """
         Return the 6 secondary neighbours of a hex.
         """
-        return [self[h.x + dx, h.y + dy] for dx, dy in self._secondary_neighbors]
+        delta: List[Tuple[int, int]] = [(h.x + dx, h.y + dy) for dx, dy in self._secondary_neighbors]
+        return [self[x, y] for x, y in delta if x > -1 and y > -1 and self[x, y]]
+
+    def _update_hex_neighbors(self):
+        """
+        Update the neighbor states for all hexes in the grid.
+        """
+        [h.set_neighbor_states() for h in self.generator()]
 
     def generator(self):
         """
@@ -156,12 +167,6 @@ class BaseLayer(object):
 
                 yield h
 
-    def _refresh_neighbors(self):
-        """
-        Update the neighbor states for all hexes in the grid.
-        """
-        [h.set_neighbor_states() for h in self.generator()]
-
     def randomize(self):
         """
         Randomly distribute land hexes across grid.
@@ -173,64 +178,116 @@ class BaseLayer(object):
             else:
                 h.set_ocean()
 
-    def terraform_land(self):
+    def terraform(self):
         """
         Grow land hexes across grid.
         """
-        self._refresh_neighbors()
+        self._update_hex_neighbors()
         for h in self.generator():
             if not h.is_land() and h.total[TerraformState.Land] > 6:
                 h.set_land()
 
-    @staticmethod
-    def _expand_until_hit(h: Hex, hex_types: List[TerraformState]) -> Optional[Hex]:
+    def finalize(self):
+        self._remove_stray_land()
+        self._enforce_ocean_border()
+        self._remove_interior_oceans()
+
+    def _remove_stray_land(self):
         """
-        Expand from hex until a hex type is hit, returning the last hex before hit.
+        Remove stray patches of land across grid.
         """
-        ocean_hit: bool = False
-        expanded: Set[Hex] = {h}
-        newly_expanded: Set[Hex] = set()
-        while not ocean_hit and expanded:
+        self._update_hex_neighbors()
+        for h in self.generator():
+            if h.is_land() and h.direct[TerraformState.Land] < 4:
+                h.set_ocean()
+
+    def _enforce_ocean_border(self):
+        """
+        Ensure a one hex border of ocean hexes on map.
+        """
+        xs: List[int] = [0, 1, self._columns, self._columns - 1]
+        ys: List[int] = [0, 1, self._rows - 2, self._rows - 3]
+        for h in self.generator():
+            if h.x in xs or h.y in ys:
+                h.set_ocean()
+
+    def _remove_interior_oceans(self):
+        """
+        Locate any 'interior' oceans, and if present replace them with land.
+        """
+        usable_hexes: List[Hex] = [h for h in self.generator() if h.is_ocean()]
+        found_oceans: List[List[Hex]] = []
+
+        # Pick random ocean hex to start, then expand out until no more ocean to expand to
+        start: Hex = self._random.choice(usable_hexes)
+        usable_hexes.remove(start)
+        ocean_hexes: Set[Hex] = {start}
+        expanded: Set[Hex] = {start}
+        to_expand: Set[Hex] = set()
+        while usable_hexes:
             for h in expanded:
                 for n in h.direct_neighbors:
-                    if n:
-                        if n._state in hex_types:
-                            return n
-                        else:
-                            newly_expanded.add(n)
+                    if n and n in usable_hexes:
+                        to_expand.add(n)
+                        ocean_hexes.add(n)
+                        usable_hexes.remove(n)
 
-            expanded = newly_expanded.copy()
-            newly_expanded.clear()
+            if not to_expand:
+                found_oceans.append(list(ocean_hexes))
+                ocean_hexes.clear()
+                next_start_hex: Hex = self._random.choice(usable_hexes)
+                expanded = {next_start_hex}
+                ocean_hexes = {next_start_hex}
+                usable_hexes.remove(next_start_hex)
+            else:
+                expanded = to_expand.copy()
+                to_expand.clear()
 
-        return None
+        if ocean_hexes:
+            found_oceans.append(list(ocean_hexes))
 
-    def _find_distance_to(self, h: Hex, hex_types: List[TerraformState]) -> float:
-        shortest_distance: float = float('inf')
-        end: Hex = self._expand_until_hit(h, hex_types)
+        # Turn all 'oceans" smaller than the largest into land
+        if len(found_oceans) > 1:
+            found_oceans.sort(key=len, reverse=True)
+            for ocean in found_oceans[1:]:
+                for h in ocean:
+                    h.set_land()
 
-        dx: float = h.x - end.x
-        dy: float = h.y - end.y
-        if self._path_find_mode == PathfindMode.Manhattan:
-            distance = max(math.fabs(dx), math.fabs(dy))
-        elif self._path_find_mode == PathfindMode.Euclidean:
-            distance = math.sqrt(dx * dx + dy * dy)
-        else:
-            distance = max(math.fabs(dx), math.fabs(dy))
-
-        if distance < shortest_distance:
-            shortest_distance = distance
-
-        return self.normalize_distance(shortest_distance)
-
-    def set_elevation(self):
+    def clean_up_freshwater(self):
         """
-        Expand out from each hex until ocean is hit to determine elevation grade.
-        Elevation is distance from ocean.
+        Ensuring reasonable lake and river arrangements.
+        """
+        # Set isolated land to be lakes or rivers
+        self._update_hex_neighbors()
+        for h in self.generator():
+            if h.is_land() or h.is_coast():
+                if h.direct[TerraformState.Lake] == 6:
+                    h.set_lake()
+                elif h.direct[TerraformState.River] == 6:
+                    h.set_river()
+
+        # Set lakes composed of only one hex to be rivers
+        self._update_hex_neighbors()
+        for h in self.generator():
+            if h.is_lake() and h.direct[TerraformState.River] == 1:
+                h.set_river()
+
+    def set_elevation(self, include_freshwater: bool):
+        """
+        Expand out from each hex until water is hit to determine elevation grade.
+        Elevation is ultimately distance from ocean and freshwater.
         """
         for h in self.generator():
             if h.is_land() or h.is_coast():
-                elevation: float = self._find_distance_to(h, [TerraformState.Ocean])
-                h.set_elevation(elevation)
+                ocean_elevation: float = HexUtils.distance(
+                    h, [TerraformState.Ocean], self._path_find_mode, self._max_distance)
+
+                if include_freshwater:
+                    freshwater_elevation: float = HexUtils.distance(
+                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
+                    h.elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
+                else:
+                    h.elevation = ocean_elevation
             else:
                 h.elevation = 0
 
@@ -241,45 +298,22 @@ class BaseLayer(object):
         """
         for h in self.generator():
             if h.is_ocean() or h.is_lake() or h.is_river():
-                depth: float = self._find_distance_to(h, [TerraformState.Land])
-                h.set_depth(depth)
+                depth: float = HexUtils.distance(
+                    h, [TerraformState.Land], self._path_find_mode, self._max_distance)
+                h.depth = depth
             else:
                 h.depth = 0
 
     def set_dryness(self):
         """
         Expand out from each hex until lake is hit to determine moisture grade.
-        Dryness is the distance from freshwater and ocean.
+        Dryness is distance from freshwater sources and ocean.
         """
         for h in self.generator():
             if h.is_land() or h.is_coast():
-                distance_from_freshwater: float = self._find_distance_to(h, [TerraformState.Lake, TerraformState.River])
+                distance_from_freshwater: float = HexUtils.distance(
+                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
                 dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
                 if dryness > 1:
                     dryness = 1
-                h.set_dryness(dryness)
-
-    def clean_up_lakes(self):
-        """
-        Remove stray patches of lakes across grid.
-        """
-        self._refresh_neighbors()
-        for h in self.generator():
-            if h.is_lake() and h.direct[TerraformState.Land] == 6:
-                h.set_land()
-
-    def clean_up_land(self):
-        """
-        Remove stray patches of land across grid.
-        """
-        self._refresh_neighbors()
-        for h in self.generator():
-            if h.is_land() and h.direct[TerraformState.Land] < 4:
-                h.set_ocean()
-
-    def normalize_distance(self, value: float) -> float:
-        normalized: float = value / self.max_distance
-        if normalized > 1:
-            normalized = 1
-
-        return normalized
+                h.dryness = dryness

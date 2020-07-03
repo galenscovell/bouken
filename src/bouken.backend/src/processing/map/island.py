@@ -12,7 +12,7 @@ class Island(object):
     """
     def __init__(self, island_id: int, start_hex: Hex):
         self.island_id: int = island_id
-        self.hexes: Set[Hex] = {start_hex}
+        self.hexes: List[Hex] = [start_hex]
         self.region_keys: Set[int] = set()
 
         self.expanded_hexes: Set[Hex] = {start_hex}
@@ -28,7 +28,7 @@ class Island(object):
         Add a hex to this island.
         """
         h.set_island(self.island_id)
-        self.hexes.add(h)
+        self.hexes.append(h)
 
     def refresh(self):
         """
@@ -61,7 +61,7 @@ class Island(object):
         newly_expanded: Set[Hex] = set()
         for h in self.expanded_hexes:
             for n in h.direct_neighbors:
-                if n and n in usable_hexes and not n.is_on_island():
+                if n in usable_hexes and not n.is_on_island():
                     newly_expanded.add(n)
 
         if not newly_expanded:

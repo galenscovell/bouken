@@ -10,7 +10,7 @@ import uuid
 
 import uvicorn
 
-# sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from fastapi import Depends, FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         pixel_width=900,
         hex_size=12,
         initial_land_pct=0.3,
-        terraform_iterations=30,
+        terraform_iterations=32,
         min_island_size=14,
         min_region_expansions=2,
         max_region_expansions=5,
