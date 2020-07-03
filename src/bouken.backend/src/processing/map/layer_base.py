@@ -5,7 +5,6 @@ from typing import List, Optional, Tuple, Set
 import pygame
 
 from src.processing.map.hex import Hex
-from src.processing.map.path_find_mode import PathfindMode
 from src.processing.map.terraform_state import TerraformState
 from src.util.hex_utils import HexUtils
 
@@ -21,7 +20,6 @@ class BaseLayer(object):
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, pointy: bool = True):
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
-        self._path_find_mode: PathfindMode = PathfindMode.Euclidean
         self.initial_land_pct: float = initial_land_pct
 
         width_diameter, height_diameter, horizontal_spacing, vertical_spacing = \
@@ -74,9 +72,6 @@ class BaseLayer(object):
 
         self._random: random.Random = random.Random()
 
-        # Set max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes
-        self._max_distance: float = (self._columns * self._rows) / 160
-
         self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
         self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
@@ -113,6 +108,12 @@ class BaseLayer(object):
             else:
                 depth_color = (85 - (85 * h.depth), 125 - (125 * h.depth), 166 - (166 * h.depth))
                 pygame.draw.polygon(surface, depth_color, h.vertices)
+
+    def get_max_distance(self) -> float:
+        """
+        Get max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes.
+        """
+        return (self._columns * self._rows) / 160
 
     def total_usable_hexes(self) -> int:
         total: int = 0
@@ -203,12 +204,19 @@ class BaseLayer(object):
 
     def _enforce_ocean_border(self):
         """
-        Ensure a one hex border of ocean hexes on map.
+        Ensure a hex border of ocean hexes on map.
         """
         xs: List[int] = [0, 1, self._columns, self._columns - 1]
         ys: List[int] = [0, 1, self._rows - 2, self._rows - 3]
+
+        corners: List[Tuple[int, int]] = [
+            (2, 2), (2, 4), (3, 3), (4, 2),
+            (self._columns - 2, 2), (self._columns - 2, 4), (self._columns - 3, 3), (self._columns - 4, 2),
+            (2, self._rows - 5), (3, self._rows - 4),
+            (self._columns - 2, self._rows - 5), (self._columns - 3, self._rows - 4)
+        ]
         for h in self.generator():
-            if h.x in xs or h.y in ys:
+            if h.x in xs or h.y in ys or h.get_tuple_coord() in corners:
                 h.set_ocean()
 
     def _remove_interior_oceans(self):
@@ -252,68 +260,3 @@ class BaseLayer(object):
             for ocean in found_oceans[1:]:
                 for h in ocean:
                     h.set_land()
-
-    def clean_up_freshwater(self):
-        """
-        Ensuring reasonable lake and river arrangements.
-        """
-        # Set isolated land to be lakes or rivers
-        self._update_hex_neighbors()
-        for h in self.generator():
-            if h.is_land() or h.is_coast():
-                if h.direct[TerraformState.Lake] == 6:
-                    h.set_lake()
-                elif h.direct[TerraformState.River] == 6:
-                    h.set_river()
-
-        # Set lakes composed of only one hex to be rivers
-        self._update_hex_neighbors()
-        for h in self.generator():
-            if h.is_lake() and h.direct[TerraformState.River] == 1:
-                h.set_river()
-
-    def set_elevation(self, include_freshwater: bool):
-        """
-        Expand out from each hex until water is hit to determine elevation grade.
-        Elevation is ultimately distance from ocean and freshwater.
-        """
-        for h in self.generator():
-            if h.is_land() or h.is_coast():
-                ocean_elevation: float = HexUtils.distance(
-                    h, [TerraformState.Ocean], self._path_find_mode, self._max_distance)
-
-                if include_freshwater:
-                    freshwater_elevation: float = HexUtils.distance(
-                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
-                    h.elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
-                else:
-                    h.elevation = ocean_elevation
-            else:
-                h.elevation = 0
-
-    def set_depth(self):
-        """
-        Expand out from each hex until land is hit to determine depth grade.
-        Depth is distance from land.
-        """
-        for h in self.generator():
-            if h.is_ocean() or h.is_lake() or h.is_river():
-                depth: float = HexUtils.distance(
-                    h, [TerraformState.Land], self._path_find_mode, self._max_distance)
-                h.depth = depth
-            else:
-                h.depth = 0
-
-    def set_dryness(self):
-        """
-        Expand out from each hex until lake is hit to determine moisture grade.
-        Dryness is distance from freshwater sources and ocean.
-        """
-        for h in self.generator():
-            if h.is_land() or h.is_coast():
-                distance_from_freshwater: float = HexUtils.distance(
-                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
-                dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
-                if dryness > 1:
-                    dryness = 1
-                h.dryness = dryness

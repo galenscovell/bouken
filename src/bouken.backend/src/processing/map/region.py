@@ -130,7 +130,7 @@ class Region(object):
 
     def set_geographic_details(self):
         """
-        Find thi region's exterior hexes and its overall status geographically.
+        Find this region's exterior hexes and its overall status geographically.
         """
         self.is_coastal: bool = False
         self.is_secluded: bool = False

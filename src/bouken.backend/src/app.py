@@ -95,6 +95,10 @@ if __name__ == '__main__':
         initial_land_pct=0.3,
         terraform_iterations=32,
         min_island_size=14,
+        min_lake_expansions=2,
+        max_lake_expansions=5,
+        min_lake_amount=1,
+        max_lake_amount=4,
         min_region_expansions=2,
         max_region_expansions=5,
         min_region_size_pct=0.0125

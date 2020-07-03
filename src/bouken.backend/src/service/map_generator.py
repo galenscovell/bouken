@@ -4,6 +4,7 @@ from typing import Optional
 
 from src.processing.map.layer_base import BaseLayer
 from src.processing.map.layer_feature import FeatureLayer
+from src.processing.map.layer_geography import GeographyLayer
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.layer_regions import RegionLayer
 from src.util.compact_json_encoder import CompactJsonEncoder
@@ -15,21 +16,35 @@ class MapGenerator:
     Procedurally generates hexagon-based maps composed of land features and political regions.
     """
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, terraform_iterations: int,
-                 min_island_size: int, min_region_expansions: int, max_region_expansions: int,
+                 min_island_size: int, min_lake_expansions: int, max_lake_expansions: int,
+                 min_lake_amount: int, max_lake_amount: int, min_region_expansions: int, max_region_expansions: int,
                  min_region_size_pct: float):
+        # Base parameters
         self.pixel_width: int = pixel_width
         self.hex_diameter: int = hex_size
+
+        # Terraform parameters
         self.initial_land_pct: float = initial_land_pct
         self.terraform_iterations: int = terraform_iterations
+        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, False)
 
+        # Island parameters
         self.min_island_size: int = min_island_size
+        self.island_layer: Optional[IslandLayer] = None
+
+        # Geography parameters
+        self.min_lake_expansions: int = min_lake_expansions
+        self.max_lake_expansions: int = max_lake_expansions
+        self.min_lake_amount: int = min_lake_amount
+        self.max_lake_amount: int = max_lake_amount
+        self.geography_layer: Optional[GeographyLayer] = None
+
+        # Region parameters
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
         self.min_region_size_pct: float = min_region_size_pct
-
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, False)
-        self.island_layer: Optional[IslandLayer] = None
         self.region_layer: Optional[RegionLayer] = None
+
         self.feature_layer: Optional[FeatureLayer] = None
 
         # self.generate()
@@ -46,15 +61,23 @@ class MapGenerator:
             acceptable = self.base_layer.has_enough_land()
             if not acceptable:
                 self.base_layer.randomize()
-                continue
 
-            print('Generating island layer...')
-            self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
+        print('Generating island layer...')
+        self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
 
-            filling_islands: bool = True
-            while filling_islands:
-                filling_islands = self.island_layer.discover()
-            self.island_layer.clean_up(self.base_layer)
+        running: bool = True
+        while running:
+            running = self.island_layer.discover()
+        self.island_layer.clean_up(self.base_layer)
+
+        print('Generating geography layer...')
+        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions,
+                                              self.min_lake_amount, self.max_lake_amount)
+
+        running = True
+        while running:
+            running = self.geography_layer.place_freshwater()
+        self.geography_layer.finalize()
 
         print('Generating region layer...')
         self.region_layer = RegionLayer(
@@ -65,17 +88,14 @@ class MapGenerator:
             self.base_layer.total_usable_hexes()
         )
 
-        print('Placing freshwater...')
-        self.region_layer.place_freshwater(self.base_layer)
-
-        filling_regions: bool = True
-        while filling_regions:
-            filling_regions = self.region_layer.discover(self.island_layer)
+        running = True
+        while running:
+            running = self.region_layer.discover(self.island_layer)
         self.region_layer.establish_regions_to_merge()
 
-        merging: bool = True
-        while merging:
-            merging = self.region_layer.merge(self.island_layer)
+        running = True
+        while running:
+            running = self.region_layer.merge(self.island_layer)
 
         print('Serializing...')
         # self.serialize()
@@ -107,6 +127,7 @@ class MapGenerator:
         update_tick = 0
         terraforming = True
         island_filling = False
+        placing_freshwater = False
         region_filling = False
         merging = False
         feature_filling = False
@@ -141,13 +162,18 @@ class MapGenerator:
                                 self.base_layer.randomize()
                                 self.terraform_iterations = initial_terraform_iterations
                     elif island_filling:
-                        remaining: bool = self.island_layer.discover()
-                        if not remaining:
+                        processing: bool = self.island_layer.discover()
+                        if not processing:
                             self.island_layer.clean_up(self.base_layer)
+                            self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
+                                                                  self.max_lake_expansions, self.min_lake_amount,
+                                                                  self.max_lake_amount)
                             island_filling = False
-                            region_filling = True
-
-                        if not island_filling:
+                            placing_freshwater = True
+                    elif placing_freshwater:
+                        processing: bool = self.geography_layer.place_freshwater()
+                        if not processing:
+                            self.geography_layer.finalize()
                             self.region_layer = RegionLayer(
                                 self.island_layer,
                                 self.min_region_expansions,
@@ -156,23 +182,24 @@ class MapGenerator:
                                 self.base_layer.total_usable_hexes()
                             )
 
-                            self.region_layer.place_freshwater(self.base_layer)
+                            placing_freshwater = False
+                            region_filling = True
                     elif region_filling:
-                        discovering: bool = self.region_layer.discover(self.island_layer)
-                        if not discovering:
+                        processing: bool = self.region_layer.discover(self.island_layer)
+                        if not processing:
                             self.region_layer.establish_regions_to_merge()
                             region_filling = False
                             merging = True
                     elif merging:
-                        merging: bool = self.region_layer.merge(self.island_layer)
-                        if not merging:
+                        processing: bool = self.region_layer.merge(self.island_layer)
+                        if not processing:
                             self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
                             merging = False
                             feature_filling = True
                     elif feature_filling:
                         self.feature_layer.construct()
 
-                if terraforming:
+                if terraforming or placing_freshwater:
                     self.base_layer.debug_render(surface)
                 elif island_filling:
                     self.island_layer.debug_render(surface)

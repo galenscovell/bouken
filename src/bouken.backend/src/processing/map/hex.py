@@ -79,6 +79,9 @@ class Hex(object):
             'vertices': self.vertices
         }
 
+    def get_tuple_coord(self) -> Tuple[int, int]:
+        return self.x, self.y
+
     def set_neighbor_states(self):
         self.direct = [0 for s in self._state_options]
         for h in self.direct_neighbors:
