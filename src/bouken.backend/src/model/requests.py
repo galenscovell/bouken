@@ -1,5 +1,5 @@
 """
-Defines all request models for the service.
+Defines all request model for the service.
 """
 
 from pydantic import BaseModel

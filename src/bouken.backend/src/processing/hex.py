@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from src.processing.map.terraform_state import TerraformState
+from src.types.terraform import Terraform
 
 
 class Hex(object):
@@ -23,16 +23,16 @@ class Hex(object):
 
         self.direct_neighbors: List[Hex] = []
         self.secondary_neighbors: List[Hex] = []
-        self.total: List[TerraformState] = []
-        self.direct: List[TerraformState] = []
-        self.secondary: List[TerraformState] = []
+        self.total: List[Terraform] = []
+        self.direct: List[Terraform] = []
+        self.secondary: List[Terraform] = []
 
-        self._state: TerraformState = TerraformState.Ocean
+        self._state: Terraform = Terraform.Ocean
         self._on_island: bool = False
         self._in_region: bool = False
 
-        self._state_options: List[TerraformState] = [
-            TerraformState.Land, TerraformState.Coast, TerraformState.Ocean, TerraformState.Lake, TerraformState.River]
+        self._state_options: List[Terraform] = [
+            Terraform.Land, Terraform.Coast, Terraform.Ocean, Terraform.Lake, Terraform.River]
 
         self.island_id: int = -1
         self.region_id: int = -1
@@ -94,19 +94,19 @@ class Hex(object):
         self.total = [self.direct[n] + self.secondary[n] for n in range(len(self._state_options))]
 
     def set_land(self):
-        self._state = TerraformState.Land
+        self._state = Terraform.Land
 
     def set_coast(self):
-        self._state = TerraformState.Coast
+        self._state = Terraform.Coast
 
     def set_ocean(self):
-        self._state = TerraformState.Ocean
+        self._state = Terraform.Ocean
 
     def set_lake(self):
-        self._state = TerraformState.Lake
+        self._state = Terraform.Lake
 
     def set_river(self):
-        self._state = TerraformState.River
+        self._state = Terraform.River
 
     def set_island(self, island_id: int):
         self._on_island = True
@@ -125,19 +125,19 @@ class Hex(object):
         self.region_id = -1
 
     def is_land(self) -> bool:
-        return self._state == TerraformState.Land
+        return self._state == Terraform.Land
 
     def is_coast(self) -> bool:
-        return self._state == TerraformState.Coast
+        return self._state == Terraform.Coast
 
     def is_ocean(self) -> bool:
-        return self._state == TerraformState.Ocean
+        return self._state == Terraform.Ocean
 
     def is_lake(self) -> bool:
-        return self._state == TerraformState.Lake
+        return self._state == Terraform.Lake
 
     def is_river(self) -> bool:
-        return self._state == TerraformState.River
+        return self._state == Terraform.River
 
     def is_on_island(self) -> bool:
         return self._on_island is True

@@ -1,5 +1,5 @@
 """
-Defines all response models for the service.
+Defines all response model for the service.
 """
 
 from pydantic import BaseModel

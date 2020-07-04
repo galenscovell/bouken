@@ -4,8 +4,8 @@ from typing import List, Optional, Tuple, Set
 
 import pygame
 
-from src.processing.map.hex import Hex
-from src.processing.map.terraform_state import TerraformState
+from src.processing.hex import Hex
+from src.types.terraform import Terraform
 from src.util.constants import ocean_color, dryness_color
 from src.util.hex_utils import HexUtils
 
@@ -77,7 +77,7 @@ class BaseLayer(object):
         self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
         # Set max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes.
-        HexUtils.MAX_DISTANCE = (self._columns * self._rows) / 160
+        HexUtils.MAX_DISTANCE = (self._columns * self._rows) / 200
 
         self.randomize()
 
@@ -182,7 +182,7 @@ class BaseLayer(object):
         """
         self._update_hex_neighbors()
         for h in self.generator():
-            if not h.is_land() and h.total[TerraformState.Land] > 6:
+            if not h.is_land() and h.total[Terraform.Land] > 6:
                 h.set_land()
 
     def finalize(self):
@@ -196,7 +196,7 @@ class BaseLayer(object):
         """
         self._update_hex_neighbors()
         for h in self.generator():
-            if h.is_land() and h.direct[TerraformState.Land] < 4:
+            if h.is_land() and h.direct[Terraform.Land] < 4:
                 h.set_ocean()
 
     def _enforce_ocean_border(self):

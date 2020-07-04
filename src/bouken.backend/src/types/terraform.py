@@ -1,7 +1,7 @@
 from enum import IntEnum
 
 
-class TerraformState(IntEnum):
+class Terraform(IntEnum):
     """
     The possible states of a hex due to terraforming.
     """

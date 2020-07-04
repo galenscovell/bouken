@@ -1,9 +1,9 @@
 import random
 from typing import List, Set, Tuple, Optional
 
-from src.processing.map.hex import Hex
-from src.processing.map.layer_base import BaseLayer
-from src.processing.map.terraform_state import TerraformState
+from src.processing.hex import Hex
+from src.processing.layer_base import BaseLayer
+from src.types.terraform import Terraform
 from src.util.hex_utils import HexUtils
 
 
@@ -68,7 +68,7 @@ class GeographyLayer(object):
         # Find lake exterior
         exterior: List[Hex] = []
         for h in lake_hexes:
-            if h.direct[TerraformState.Ocean] > 0 or h.direct[TerraformState.River] > 0:
+            if h.direct[Terraform.Ocean] > 0 or h.direct[Terraform.River] > 0:
                 return [], []
             exterior.append(h)
 
@@ -142,10 +142,10 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                ocean_elevation: float = HexUtils.distance(h, [TerraformState.Ocean])
+                ocean_elevation: float = HexUtils.distance(h, [Terraform.Ocean])
 
                 if include_freshwater:
-                    freshwater_elevation: float = HexUtils.distance(h, [TerraformState.Lake, TerraformState.River])
+                    freshwater_elevation: float = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
                     h.elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
                 else:
                     h.elevation = ocean_elevation
@@ -159,7 +159,7 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_ocean() or h.is_lake() or h.is_river():
-                depth: float = HexUtils.distance(h, [TerraformState.Land])
+                depth: float = HexUtils.distance(h, [Terraform.Land])
                 h.depth = depth
             else:
                 h.depth = 0
@@ -171,7 +171,7 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                distance_from_freshwater: float = HexUtils.distance(h, [TerraformState.Lake, TerraformState.River])
+                distance_from_freshwater: float = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
                 dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
                 if dryness > 1:
                     dryness = 1

@@ -6,9 +6,6 @@ Bouken backend API.
 
 import os
 import sys
-import uuid
-
-import uvicorn
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
@@ -16,12 +13,10 @@ from fastapi import Depends, FastAPI
 from fastapi.encoders import jsonable_encoder
 
 from starlette.responses import JSONResponse
-from starlette.status import HTTP_200_OK, HTTP_202_ACCEPTED, HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
-from typing import List
-
-from src.logger import info, warn, error
-from src.models.responses import StatusResponse
+from src.util.logger import info, error
+from src.model.responses import StatusResponse
 from src.service.map_generator import MapGenerator
 
 app = FastAPI(

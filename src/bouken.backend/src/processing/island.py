@@ -3,7 +3,7 @@ from typing import List, Tuple, Set
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
-from src.processing.map.hex import Hex
+from src.processing.hex import Hex
 
 
 class Island(object):

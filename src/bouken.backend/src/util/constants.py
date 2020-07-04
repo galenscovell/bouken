@@ -1,4 +1,4 @@
-from src.processing.map.path_find_mode import PathfindMode
+from src.types.pathfinding import Pathfinding
 
 
 background_color = (52, 73, 94)
@@ -24,4 +24,4 @@ hot_desert_color = (233, 221, 199)
 grassland_color = (196, 212, 170)
 tropical_color = (156, 187, 169)
 
-path_find_mode = PathfindMode.Euclidean
+path_find_mode = Pathfinding.Euclidean

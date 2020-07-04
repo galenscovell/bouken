@@ -1,9 +1,9 @@
 import math
 from typing import List, Tuple, Optional, Set
 
-from src.processing.map.hex import Hex
-from src.processing.map.path_find_mode import PathfindMode
-from src.processing.map.terraform_state import TerraformState
+from src.processing.hex import Hex
+from src.types.pathfinding import Pathfinding
+from src.types.terraform import Terraform
 from src.util.constants import path_find_mode
 
 
@@ -44,7 +44,7 @@ class HexUtils(object):
         return vertices
 
     @staticmethod
-    def expand_until_hit(h: Hex, hex_types: List[TerraformState]) -> Optional[Hex]:
+    def expand_until_hit(h: Hex, hex_types: List[Terraform]) -> Optional[Hex]:
         """
         Expand from hex until a hex type is hit, returning the last hex before hit.
         """
@@ -67,7 +67,7 @@ class HexUtils(object):
         return None
 
     @staticmethod
-    def distance(h: Hex, hex_types: List[TerraformState]) -> float:
+    def distance(h: Hex, hex_types: List[Terraform]) -> float:
         """
         Find the hex distance from start hex to any hex of target types.
         """
@@ -78,9 +78,9 @@ class HexUtils(object):
 
         dx: float = h.x - end.x
         dy: float = h.y - end.y
-        if path_find_mode == PathfindMode.Manhattan:
+        if path_find_mode == Pathfinding.Manhattan:
             distance = max(math.fabs(dx), math.fabs(dy))
-        elif path_find_mode == PathfindMode.Euclidean:
+        elif path_find_mode == Pathfinding.Euclidean:
             distance = math.sqrt(dx * dx + dy * dy)
         else:
             distance = max(math.fabs(dx), math.fabs(dy))

@@ -2,11 +2,11 @@ import json
 import sys
 from typing import Optional
 
-from src.processing.map.layer_base import BaseLayer
-from src.processing.map.layer_feature import FeatureLayer
-from src.processing.map.layer_geography import GeographyLayer
-from src.processing.map.layer_islands import IslandLayer
-from src.processing.map.layer_regions import RegionLayer
+from src.processing.layer_base import BaseLayer
+from src.processing.layer_feature import FeatureLayer
+from src.processing.layer_geography import GeographyLayer
+from src.processing.layer_islands import IslandLayer
+from src.processing.layer_regions import RegionLayer
 from src.util.compact_json_encoder import CompactJsonEncoder
 from src.util.constants import background_color, update_rate, frame_rate
 
@@ -96,6 +96,10 @@ class MapGenerator:
         running = True
         while running:
             running = self.region_layer.merge(self.island_layer)
+        self.region_layer.remove_stray_regions(self.island_layer)
+
+        self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
+        self.feature_layer.construct()
 
         print('Serializing...')
         # self.serialize()

@@ -3,11 +3,11 @@ from typing import List, Optional, Dict, KeysView, Set
 
 import pygame
 
-from src.processing.map.hex import Hex
-from src.processing.map.island import Island
-from src.processing.map.layer_islands import IslandLayer
-from src.processing.map.region import Region
-from src.processing.map.terraform_state import TerraformState
+from src.processing.hex import Hex
+from src.processing.island import Island
+from src.processing.layer_islands import IslandLayer
+from src.processing.region import Region
+from src.types.terraform import Terraform
 from src.util.constants import region_center_color
 from src.util.hex_utils import HexUtils
 
@@ -199,5 +199,5 @@ class RegionLayer(object):
 
         # Calculate water depth for the new ocean hexes
         for h in new_ocean_hexes:
-            depth: float = HexUtils.distance(h, [TerraformState.Land])
+            depth: float = HexUtils.distance(h, [Terraform.Land])
             h.depth = depth

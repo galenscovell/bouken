@@ -3,9 +3,9 @@ from typing import List, Optional, Dict, KeysView, Set
 
 import pygame
 
-from src.processing.map.hex import Hex
-from src.processing.map.island import Island
-from src.processing.map.layer_base import BaseLayer
+from src.processing.hex import Hex
+from src.processing.island import Island
+from src.processing.layer_base import BaseLayer
 from src.util.constants import island_color
 
 
