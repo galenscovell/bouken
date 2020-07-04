@@ -12,9 +12,12 @@ class GeographyLayer(object):
     Defines geographic qualities of map (elevation, depth, dryness, freshwater).
     """
     def __init__(self, base_layer: BaseLayer, min_lake_expansions: int, max_lake_expansions: int,
-                 min_lake_amount: int, max_lake_amount: int):
+                 min_lake_amount: int, max_lake_amount: int, base_elevation: float, base_dryness: float):
         self._min_lake_expansions: int = min_lake_expansions
         self._max_lake_expansions: int = max_lake_expansions
+        self._base_elevation: float = base_elevation
+        self._base_dryness: float = base_dryness
+
         self._random: random.Random = random.Random()
 
         # Get all base hexes
@@ -31,8 +34,8 @@ class GeographyLayer(object):
 
         # Collect a small pool of mid-elevation hexes as our possible lake starters
         mid_elevation_hexes_asc: List[Hex] = sorted(list(self._usable_hexes), key=lambda h: h.elevation)
-        start_index: int = round(len(mid_elevation_hexes_asc) // 1.25)
-        end_index: int = start_index + (start_index // 32)
+        start_index: int = round(len(mid_elevation_hexes_asc) // 1.1)
+        end_index: int = start_index + (start_index // 24)
         mid_elevation_hexes_asc = mid_elevation_hexes_asc[start_index:end_index]
         self._random.shuffle(mid_elevation_hexes_asc)
 
@@ -143,14 +146,42 @@ class GeographyLayer(object):
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
                 ocean_elevation: float = HexUtils.distance(h, [Terraform.Ocean])
-
-                if include_freshwater:
+                elevation: float = ocean_elevation
+                if include_freshwater and self._made_lakes > 0:
                     freshwater_elevation: float = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
-                    h.elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
-                else:
-                    h.elevation = ocean_elevation
+                    elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
+
+                elevation += self._base_elevation
+                if elevation > 1:
+                    elevation = 1
+                elif elevation < 0:
+                    elevation = 0
+
+                h.elevation = elevation
             else:
                 h.elevation = 0
+
+    def set_dryness(self):
+        """
+        Expand out from each hex until lake is hit to determine moisture grade.
+        Dryness is a land hex's distance from (mostly) freshwater sources and (minorly) ocean.
+        """
+        for h in self.base_layer.generator():
+            if h.is_land() or h.is_coast():
+                ocean_distance: float = HexUtils.distance(h, [Terraform.Ocean])
+                freshwater_distance: float = 0
+                if self._made_lakes > 0:
+                    freshwater_distance = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
+
+                dryness: float = (freshwater_distance * 0.6) + (ocean_distance * 0.4)
+                dryness += self._base_dryness
+                if dryness > 1:
+                    dryness = 1
+                elif dryness < 0:
+                    dryness = 0
+                h.dryness = dryness
+            else:
+                h.dryness = 0
 
     def set_depth(self):
         """
@@ -163,18 +194,3 @@ class GeographyLayer(object):
                 h.depth = depth
             else:
                 h.depth = 0
-
-    def set_dryness(self):
-        """
-        Expand out from each hex until lake is hit to determine moisture grade.
-        Dryness is a land hex's distance from (mostly) freshwater sources and (minorly) ocean.
-        """
-        for h in self.base_layer.generator():
-            if h.is_land() or h.is_coast():
-                distance_from_freshwater: float = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
-                dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
-                if dryness > 1:
-                    dryness = 1
-                h.dryness = dryness
-            else:
-                h.dryness = 0

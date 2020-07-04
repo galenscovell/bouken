@@ -15,9 +15,11 @@ class MapGenerator:
     """
     Procedurally generates hexagon-based maps composed of land features and political regions.
     """
+
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, terraform_iterations: int,
                  min_island_size: int, min_lake_expansions: int, max_lake_expansions: int,
-                 min_lake_amount: int, max_lake_amount: int, min_region_expansions: int, max_region_expansions: int,
+                 min_lake_amount: int, max_lake_amount: int, base_elevation: float, base_dryness: float,
+                 min_region_expansions: int, max_region_expansions: int,
                  min_region_size_pct: float):
         # Base parameters
         self.pixel_width: int = pixel_width
@@ -37,6 +39,8 @@ class MapGenerator:
         self.max_lake_expansions: int = max_lake_expansions
         self.min_lake_amount: int = min_lake_amount
         self.max_lake_amount: int = max_lake_amount
+        self.base_elevation: float = base_elevation
+        self.base_dryness: float = base_dryness
         self.geography_layer: Optional[GeographyLayer] = None
 
         # Region parameters
@@ -53,7 +57,7 @@ class MapGenerator:
     def generate(self):
         acceptable: bool = False
         while not acceptable:
-            print('Generating base layer...')
+            print(' -> Terraforming')
             for n in range(self.terraform_iterations):
                 self.base_layer.terraform()
             self.base_layer.finalize()
@@ -62,7 +66,7 @@ class MapGenerator:
             if not acceptable:
                 self.base_layer.randomize()
 
-        print('Generating island layer...')
+        print(' -> Discovering islands')
         self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
 
         running: bool = True
@@ -70,16 +74,17 @@ class MapGenerator:
             running = self.island_layer.discover()
         self.island_layer.clean_up(self.base_layer)
 
-        print('Generating geography layer...')
+        print(' -> Calculating geographic details')
         self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions,
-                                              self.min_lake_amount, self.max_lake_amount)
+                                              self.min_lake_amount, self.max_lake_amount, self.base_elevation,
+                                              self.base_dryness)
 
         running = True
         while running:
             running = self.geography_layer.place_freshwater()
         self.geography_layer.finalize()
 
-        print('Generating region layer...')
+        print(' -> Generating regions')
         self.region_layer = RegionLayer(
             self.island_layer,
             self.min_region_expansions,
@@ -93,16 +98,18 @@ class MapGenerator:
             running = self.region_layer.discover(self.island_layer)
         self.region_layer.establish_regions_to_merge()
 
+        print(' -> Merging regions')
         running = True
         while running:
             running = self.region_layer.merge(self.island_layer)
         self.region_layer.remove_stray_regions(self.island_layer)
 
-        self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
+        print(' -> Generating features and events')
+        self.feature_layer = FeatureLayer(self.region_layer)
         self.feature_layer.construct()
 
-        print('Serializing...')
-        # self.serialize()
+        print(' -> Serializing')
+        self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {
@@ -171,7 +178,8 @@ class MapGenerator:
                             self.island_layer.clean_up(self.base_layer)
                             self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
                                                                   self.max_lake_expansions, self.min_lake_amount,
-                                                                  self.max_lake_amount)
+                                                                  self.max_lake_amount, self.base_elevation,
+                                                                  self.base_dryness)
                             island_filling = False
                             placing_freshwater = True
                     elif placing_freshwater:
@@ -198,7 +206,7 @@ class MapGenerator:
                         processing: bool = self.region_layer.merge(self.island_layer)
                         if not processing:
                             self.region_layer.remove_stray_regions(self.island_layer)
-                            self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
+                            self.feature_layer = FeatureLayer(self.region_layer)
                             merging = False
                             feature_filling = True
                     elif feature_filling:
@@ -214,7 +222,7 @@ class MapGenerator:
                 else:
                     self.base_layer.debug_render(surface)
                     self.region_layer.debug_render(surface)
-                    # self.feature_layer.debug_render(surface, font)
+                    self.feature_layer.debug_render(surface, font)
 
                 pygame.display.flip()
                 clock.tick(frame_rate)

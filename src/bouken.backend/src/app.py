@@ -92,8 +92,10 @@ if __name__ == '__main__':
         min_island_size=14,
         min_lake_expansions=2,
         max_lake_expansions=6,
-        min_lake_amount=3,
+        min_lake_amount=2,
         max_lake_amount=6,
+        base_elevation=0,
+        base_dryness=0,
         min_region_expansions=2,
         max_region_expansions=5,
         min_region_size_pct=0.0125
