@@ -1,14 +1,15 @@
 import random
-from typing import List, Optional, Dict, KeysView, Tuple, Set
+from typing import List, Optional, Dict, KeysView, Set
 
 import pygame
-from pygame import freetype
 
 from src.processing.map.hex import Hex
 from src.processing.map.island import Island
 from src.processing.map.layer_islands import IslandLayer
 from src.processing.map.region import Region
+from src.processing.map.terraform_state import TerraformState
 from src.util.constants import region_center_color
+from src.util.hex_utils import HexUtils
 
 
 class RegionLayer(object):
@@ -55,17 +56,18 @@ class RegionLayer(object):
     def values(self) -> List[Region]:
         return list(self._region_key_to_region.values())
 
-    def debug_render(self, surface: pygame.Surface, font: freetype.Font):
+    def debug_render(self, surface: pygame.Surface):
         for region_key in self.keys():
             region: Region = self[region_key]
-            region_center: Tuple[int, int] = region.get_centroid()
-
-            # pygame.draw.polygon(surface, (region.avg_elevation * 255, 40, 0), region.get_vertices())
-            # pygame.draw.polygon(surface, (region.avg_dryness * 255, region.avg_dryness * 255, 40), region.get_vertices())
+            if region.base_color != (0, 0, 0):
+                for h in region.hexes:
+                    h_color = [h.elevation * c for c in region.base_color]
+                    pygame.draw.polygon(surface, h_color, h.vertices)
 
             pygame.draw.polygon(surface, region_center_color, region.get_vertices(), 4)
+
             # pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
-            font.render_to(surface, region_center, str(region_key), region_center_color)
+            # font.render_to(surface, region_center, str(region_key), region_center_color)
 
     def serialize(self) -> dict:
         region_map: dict = dict()
@@ -171,3 +173,31 @@ class RegionLayer(object):
             self._refresh_regions()
             return True
         return False
+
+    def remove_stray_regions(self, island_layer: IslandLayer):
+        """
+        Remove any regions composed of less than 6 hexes post-merge.
+        """
+        to_remove: List[int] = []
+        for region_key in self.keys():
+            region = self[region_key]
+            if len(region.hexes) < 4:
+                to_remove.append(region_key)
+
+        new_ocean_hexes: List[Hex] = []
+        for region_key in to_remove:
+            region = self[region_key]
+            for h in region.hexes:
+                h.set_ocean()
+                h.unset_island()
+                h.unset_region()
+                new_ocean_hexes.append(h)
+
+            island: Island = island_layer[region.island_id]
+            island.region_keys.remove(region_key)
+            del self[region_key]
+
+        # Calculate water depth for the new ocean hexes
+        for h in new_ocean_hexes:
+            depth: float = HexUtils.distance(h, [TerraformState.Land])
+            h.depth = depth

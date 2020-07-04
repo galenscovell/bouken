@@ -1,5 +1,5 @@
 import random
-from typing import List, Optional, Dict, KeysView
+from typing import List, Optional, Dict, KeysView, Set
 
 import pygame
 
@@ -19,8 +19,8 @@ class IslandLayer(object):
         self._random: random.Random = random.Random()
 
         # Collect all non-water hexes from base layer grid
-        self._usable_hexes: List[Hex] = []
-        [self._usable_hexes.append(h) for h in base_layer.generator() if h.is_land()]
+        self._usable_hexes: Set[Hex] = set()
+        [self._usable_hexes.add(h) for h in base_layer.generator() if h.is_land()]
 
         self._island_key_to_island: Dict[int, Island] = {}
         self._current_island: Optional[Island] = None
@@ -74,7 +74,7 @@ class IslandLayer(object):
             return True
         else:
             if self._usable_hexes:
-                random_h: Hex = self._random.choice(self._usable_hexes)
+                random_h: Hex = self._random.choice(list(self._usable_hexes))
                 if random_h.is_on_island():
                     self._usable_hexes.remove(random_h)
                 else:

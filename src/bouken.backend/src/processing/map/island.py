@@ -54,7 +54,7 @@ class Island(object):
         p: Point = self.polygon.centroid
         return int(p.x), int(p.y)
 
-    def expand(self, usable_hexes: List[Hex]):
+    def expand(self, usable_hexes: Set[Hex]):
         """
         Expand this island's area outward from its exterior hexes.
         """

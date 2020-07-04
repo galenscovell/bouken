@@ -193,6 +193,7 @@ class MapGenerator:
                     elif merging:
                         processing: bool = self.region_layer.merge(self.island_layer)
                         if not processing:
+                            self.region_layer.remove_stray_regions(self.island_layer)
                             self.feature_layer = FeatureLayer(self.island_layer, self.region_layer)
                             merging = False
                             feature_filling = True
@@ -205,11 +206,11 @@ class MapGenerator:
                     self.island_layer.debug_render(surface)
                 elif region_filling or merging:
                     self.base_layer.debug_render(surface)
-                    self.region_layer.debug_render(surface, font)
+                    self.region_layer.debug_render(surface)
                 else:
                     self.base_layer.debug_render(surface)
-                    # self.region_layer.debug_render(surface, font)
-                    self.feature_layer.debug_render(surface, font)
+                    self.region_layer.debug_render(surface)
+                    # self.feature_layer.debug_render(surface, font)
 
                 pygame.display.flip()
                 clock.tick(frame_rate)
@@ -217,7 +218,7 @@ class MapGenerator:
                 self.base_layer.debug_render(surface)
                 self.island_layer.debug_render(surface)
                 self.base_layer.debug_render(surface)
-                self.region_layer.debug_render(surface, font)
+                self.region_layer.debug_render(surface)
                 self.feature_layer.debug_render(surface, font)
                 pygame.display.flip()
                 clock.tick(frame_rate)

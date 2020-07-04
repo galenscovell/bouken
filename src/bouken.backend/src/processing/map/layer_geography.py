@@ -3,7 +3,6 @@ from typing import List, Set, Tuple, Optional
 
 from src.processing.map.hex import Hex
 from src.processing.map.layer_base import BaseLayer
-from src.processing.map.path_find_mode import PathfindMode
 from src.processing.map.terraform_state import TerraformState
 from src.util.hex_utils import HexUtils
 
@@ -16,7 +15,6 @@ class GeographyLayer(object):
                  min_lake_amount: int, max_lake_amount: int):
         self._min_lake_expansions: int = min_lake_expansions
         self._max_lake_expansions: int = max_lake_expansions
-        self._path_find_mode: PathfindMode = PathfindMode.Euclidean
         self._random: random.Random = random.Random()
 
         # Get all base hexes
@@ -25,7 +23,6 @@ class GeographyLayer(object):
         for h in self.base_layer.generator():
             self._usable_hexes.add(h)
 
-        self._max_distance: float = self.base_layer.get_max_distance()
         self._lake_amount_target: int = self._random.randint(min_lake_amount, max_lake_amount)
         self._made_lakes: int = 0
 
@@ -34,8 +31,8 @@ class GeographyLayer(object):
 
         # Collect a small pool of mid-elevation hexes as our possible lake starters
         mid_elevation_hexes_asc: List[Hex] = sorted(list(self._usable_hexes), key=lambda h: h.elevation)
-        start_index: int = round(len(mid_elevation_hexes_asc) // 1.75)
-        end_index: int = start_index + (start_index // 2)
+        start_index: int = round(len(mid_elevation_hexes_asc) // 1.25)
+        end_index: int = start_index + (start_index // 32)
         mid_elevation_hexes_asc = mid_elevation_hexes_asc[start_index:end_index]
         self._random.shuffle(mid_elevation_hexes_asc)
 
@@ -63,7 +60,7 @@ class GeographyLayer(object):
             else:
                 expansions -= 1
                 just_expanded.clear()
-                up_to_index: int = int(len(newly_expanded) * self._random.uniform(0.25, 1))
+                up_to_index: int = int(len(newly_expanded) * self._random.uniform(0.1, 1))
                 for n in range(up_to_index):
                     h: Hex = newly_expanded[n]
                     just_expanded.append(h)
@@ -145,12 +142,10 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                ocean_elevation: float = HexUtils.distance(
-                    h, [TerraformState.Ocean], self._path_find_mode, self._max_distance)
+                ocean_elevation: float = HexUtils.distance(h, [TerraformState.Ocean])
 
                 if include_freshwater:
-                    freshwater_elevation: float = HexUtils.distance(
-                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
+                    freshwater_elevation: float = HexUtils.distance(h, [TerraformState.Lake, TerraformState.River])
                     h.elevation = (ocean_elevation * 0.65) + (freshwater_elevation * 0.35)
                 else:
                     h.elevation = ocean_elevation
@@ -164,8 +159,7 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_ocean() or h.is_lake() or h.is_river():
-                depth: float = HexUtils.distance(
-                    h, [TerraformState.Land], self._path_find_mode, self._max_distance)
+                depth: float = HexUtils.distance(h, [TerraformState.Land])
                 h.depth = depth
             else:
                 h.depth = 0
@@ -177,9 +171,10 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                distance_from_freshwater: float = HexUtils.distance(
-                    h, [TerraformState.Lake, TerraformState.River], self._path_find_mode, self._max_distance)
+                distance_from_freshwater: float = HexUtils.distance(h, [TerraformState.Lake, TerraformState.River])
                 dryness: float = (distance_from_freshwater * 0.65) + (h.elevation * 0.35)
                 if dryness > 1:
                     dryness = 1
                 h.dryness = dryness
+            else:
+                h.dryness = 0

@@ -6,6 +6,7 @@ import pygame
 
 from src.processing.map.hex import Hex
 from src.processing.map.terraform_state import TerraformState
+from src.util.constants import ocean_color, dryness_color
 from src.util.hex_utils import HexUtils
 
 
@@ -75,6 +76,9 @@ class BaseLayer(object):
         self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
         self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
+        # Set max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes.
+        HexUtils.MAX_DISTANCE = (self._columns * self._rows) / 160
+
         self.randomize()
 
     def __len__(self) -> int:
@@ -99,21 +103,14 @@ class BaseLayer(object):
     def debug_render(self, surface: pygame.Surface):
         for h in self.generator():
             if h.is_land() or h.is_coast():
-                elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
-                pygame.draw.polygon(surface, elevation_color, h.vertices)
+                pygame.draw.polygon(surface, dryness_color, h.vertices)
+                # elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
+                # pygame.draw.polygon(surface, elevation_color, h.vertices)
                 # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
                 # pygame.draw.polygon(surface, dryness_color, h.vertices)
-            # elif h.is_coast():
-            #     pygame.draw.polygon(surface, coast_color, h.vertices)
             else:
-                depth_color = (85 - (85 * h.depth), 125 - (125 * h.depth), 166 - (166 * h.depth))
-                pygame.draw.polygon(surface, depth_color, h.vertices)
-
-    def get_max_distance(self) -> float:
-        """
-        Get max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes.
-        """
-        return (self._columns * self._rows) / 160
+                h_color = [c - (c * h.depth) for c in ocean_color]
+                pygame.draw.polygon(surface, h_color, h.vertices)
 
     def total_usable_hexes(self) -> int:
         total: int = 0

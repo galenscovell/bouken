@@ -5,8 +5,11 @@ from typing import List, Tuple, Set
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
+from src.processing.map.biome_type import BiomeType
 from src.processing.map.hex import Hex
 from src.processing.map.terraform_state import TerraformState
+from src.util.constants import scorched_color, tundra_color, snow_color, deciduous_color, cold_desert_color, \
+    taiga_color, hot_desert_color, grassland_color, tropical_color
 
 
 class Region(object):
@@ -37,6 +40,8 @@ class Region(object):
 
         self.avg_elevation: float = 0.0
         self.avg_dryness: float = 0.0
+        self.biome: BiomeType = BiomeType.Scorched
+        self.base_color: Tuple[int, int, int] = (0, 0, 0)
 
         start_hex.set_region(self.region_id)
 
@@ -152,5 +157,39 @@ class Region(object):
 
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded
+
         self.avg_elevation = avg_elevation / len(self.hexes)
         self.avg_dryness = avg_dryness / len(self.hexes)
+        self.biome = self._determine_biome(self.avg_elevation, self.avg_dryness)
+
+    def _determine_biome(self, elevation: float, dryness: float) -> BiomeType:
+        if 0.6 < elevation <= 1:
+            if 0.6 < dryness <= 1:
+                self.base_color = scorched_color
+                return BiomeType.Scorched
+            elif 0.3 < dryness <= 0.6:
+                self.base_color = tundra_color
+                return BiomeType.Tundra
+            else:
+                self.base_color = snow_color
+                return BiomeType.Snow
+        elif 0.3 < elevation <= 0.6:
+            if 0.6 < dryness <= 1:
+                self.base_color = cold_desert_color
+                return BiomeType.ColdDesert
+            elif 0.3 < dryness <= 0.6:
+                self.base_color = deciduous_color
+                return BiomeType.Deciduous
+            else:
+                self.base_color = taiga_color
+                return BiomeType.Taiga
+        else:
+            if 0.6 < dryness <= 1:
+                self.base_color = hot_desert_color
+                return BiomeType.HotDesert
+            elif 0.3 < dryness <= 0.6:
+                self.base_color = grassland_color
+                return BiomeType.Grassland
+            else:
+                self.base_color = tropical_color
+                return BiomeType.Tropical
