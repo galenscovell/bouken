@@ -1,4 +1,4 @@
-from src.types.pathfinding import Pathfinding
+from src.state.pathfinding import Pathfinding
 
 
 background_color = (52, 73, 94)

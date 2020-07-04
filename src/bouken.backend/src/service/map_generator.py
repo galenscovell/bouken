@@ -16,10 +16,10 @@ class MapGenerator:
     Procedurally generates hexagon-based maps composed of land features and political regions.
     """
 
-    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, terraform_iterations: int,
-                 min_island_size: int, min_lake_expansions: int, max_lake_expansions: int,
-                 min_lake_amount: int, max_lake_amount: int, base_elevation: float, base_dryness: float,
-                 min_region_expansions: int, max_region_expansions: int,
+    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
+                 terraform_iterations: int, min_island_size: int, min_lake_expansions: int,
+                 max_lake_expansions: int, min_lake_amount: int, max_lake_amount: int, base_elevation: float,
+                 base_dryness: float, min_region_expansions: int, max_region_expansions: int,
                  min_region_size_pct: float):
         # Base parameters
         self.pixel_width: int = pixel_width
@@ -27,8 +27,10 @@ class MapGenerator:
 
         # Terraform parameters
         self.initial_land_pct: float = initial_land_pct
+        self.required_land_pct: float = required_land_pct
         self.terraform_iterations: int = terraform_iterations
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, False)
+        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct,
+                                               self.required_land_pct, False)
 
         # Island parameters
         self.min_island_size: int = min_island_size
@@ -39,14 +41,14 @@ class MapGenerator:
         self.max_lake_expansions: int = max_lake_expansions
         self.min_lake_amount: int = min_lake_amount
         self.max_lake_amount: int = max_lake_amount
-        self.base_elevation: float = base_elevation
-        self.base_dryness: float = base_dryness
         self.geography_layer: Optional[GeographyLayer] = None
 
         # Region parameters
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
         self.min_region_size_pct: float = min_region_size_pct
+        self.base_elevation: float = base_elevation
+        self.base_dryness: float = base_dryness
         self.region_layer: Optional[RegionLayer] = None
 
         self.feature_layer: Optional[FeatureLayer] = None
@@ -76,8 +78,7 @@ class MapGenerator:
 
         print(' -> Calculating geographic details')
         self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions,
-                                              self.min_lake_amount, self.max_lake_amount, self.base_elevation,
-                                              self.base_dryness)
+                                              self.min_lake_amount, self.max_lake_amount)
 
         running = True
         while running:
@@ -85,13 +86,9 @@ class MapGenerator:
         self.geography_layer.finalize()
 
         print(' -> Generating regions')
-        self.region_layer = RegionLayer(
-            self.island_layer,
-            self.min_region_expansions,
-            self.max_region_expansions,
-            self.min_region_size_pct,
-            self.base_layer.total_usable_hexes()
-        )
+        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions,
+                                        self.min_region_size_pct, self.base_layer.total_usable_hexes(),
+                                        self.base_elevation, self.base_dryness)
 
         running = True
         while running:
@@ -178,21 +175,18 @@ class MapGenerator:
                             self.island_layer.clean_up(self.base_layer)
                             self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
                                                                   self.max_lake_expansions, self.min_lake_amount,
-                                                                  self.max_lake_amount, self.base_elevation,
-                                                                  self.base_dryness)
+                                                                  self.max_lake_amount)
                             island_filling = False
                             placing_freshwater = True
                     elif placing_freshwater:
                         processing: bool = self.geography_layer.place_freshwater()
                         if not processing:
                             self.geography_layer.finalize()
-                            self.region_layer = RegionLayer(
-                                self.island_layer,
-                                self.min_region_expansions,
-                                self.max_region_expansions,
-                                self.min_region_size_pct,
-                                self.base_layer.total_usable_hexes()
-                            )
+                            self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions,
+                                                            self.max_region_expansions,
+                                                            self.min_region_size_pct,
+                                                            self.base_layer.total_usable_hexes(),
+                                                            self.base_elevation, self.base_dryness)
 
                             placing_freshwater = False
                             region_filling = True

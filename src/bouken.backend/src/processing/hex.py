@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from src.types.terraform import Terraform
+from src.state.terraform import Terraform
 
 
 class Hex(object):
@@ -37,8 +37,8 @@ class Hex(object):
         self.island_id: int = -1
         self.region_id: int = -1
         self.elevation: float = 0
-        self.depth: float = 0
         self.dryness: float = 0
+        self.depth: float = 0
 
     def construct(self, width_diameter: int, height_diameter: int, horizontal_spacing: int, vertical_spacing: int):
         width_radius: int = int(width_diameter / 2)
@@ -74,8 +74,8 @@ class Hex(object):
         return {
             'type': type_str,
             'elevation': self.elevation,
-            'depth': self.depth,
             'dryness': self.dryness,
+            'depth': self.depth,
             'vertices': self.vertices
         }
 

@@ -5,9 +5,9 @@ from typing import List, Tuple, Set
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
-from src.types.biome import Biome
+from src.state.biome import Biome
 from src.processing.hex import Hex
-from src.types.terraform import Terraform
+from src.state.terraform import Terraform
 from src.util.constants import scorched_color, tundra_color, snow_color, deciduous_color, cold_desert_color, \
     taiga_color, hot_desert_color, grassland_color, tropical_color
 
@@ -133,7 +133,7 @@ class Region(object):
 
                     self.exterior_hexes.add(h)
 
-    def set_geographic_details(self):
+    def set_geographic_details(self, base_elevation: float, base_dryness: float):
         """
         Find this region's exterior hexes and its overall status geographically.
         """
@@ -160,9 +160,21 @@ class Region(object):
 
         self.avg_elevation = avg_elevation / len(self.hexes)
         self.avg_dryness = avg_dryness / len(self.hexes)
-        self.biome = self._determine_biome(self.avg_elevation, self.avg_dryness)
+        self.biome = self._determine_biome(self.avg_elevation, self.avg_dryness, base_elevation, base_dryness)
 
-    def _determine_biome(self, elevation: float, dryness: float) -> Biome:
+    def _determine_biome(self, elevation: float, dryness: float, base_elevation: float, base_dryness: float) -> Biome:
+        dryness += base_dryness
+        if dryness > 1:
+            dryness = 1
+        elif dryness < 0:
+            dryness = 0
+
+        elevation += base_elevation
+        if elevation > 1:
+            elevation = 1
+        elif elevation < 0:
+            elevation = 0
+
         if 0.6 < elevation <= 1:
             if 0.6 < dryness <= 1:
                 self.base_color = scorched_color

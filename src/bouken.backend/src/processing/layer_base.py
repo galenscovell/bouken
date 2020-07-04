@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Set
 import pygame
 
 from src.processing.hex import Hex
-from src.types.terraform import Terraform
+from src.state.terraform import Terraform
 from src.util.constants import ocean_color, dryness_color
 from src.util.hex_utils import HexUtils
 
@@ -18,10 +18,12 @@ class BaseLayer(object):
     Hexes can be either pointy or flat topped - calculations will shift accordingly.
     Allows for both indexed set/get and generator looping of all hexes.
     """
-    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, pointy: bool = True):
+    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
+                 pointy: bool = True):
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
         self.initial_land_pct: float = initial_land_pct
+        self.required_land_pct: float = required_land_pct
 
         width_diameter, height_diameter, horizontal_spacing, vertical_spacing = \
             HexUtils.calculate_layout(hex_size, pointy)
@@ -109,7 +111,10 @@ class BaseLayer(object):
                 # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
                 # pygame.draw.polygon(surface, dryness_color, h.vertices)
             else:
-                h_color = [c - (c * h.depth) for c in ocean_color]
+                h_color = [(c - (h.depth * c)) for c in ocean_color]
+                for i in range(len(h_color)):
+                    if h_color[i] > 255:
+                        h_color[i] = 255
                 pygame.draw.polygon(surface, h_color, h.vertices)
 
     def total_usable_hexes(self) -> int:
@@ -131,7 +136,7 @@ class BaseLayer(object):
         """
         Return whether or not the generated map has a reasonable amount of land.
         """
-        return self._total_land_hexes() >= (self.total_usable_hexes() * 0.45)
+        return self._total_land_hexes() >= (self.total_usable_hexes() * self.required_land_pct)
 
     def _set_direct_neighbors(self, h: Hex) -> List[Optional[Hex]]:
         """

@@ -7,7 +7,7 @@ from src.processing.hex import Hex
 from src.processing.island import Island
 from src.processing.layer_islands import IslandLayer
 from src.processing.region import Region
-from src.types.terraform import Terraform
+from src.state.terraform import Terraform
 from src.util.constants import region_center_color
 from src.util.hex_utils import HexUtils
 
@@ -18,10 +18,13 @@ class RegionLayer(object):
     Interactions directly with this object deal with the Regions dict, its primary data.
     """
     def __init__(self, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int,
-                 min_region_size_pct: float, total_map_size: int):
+                 min_region_size_pct: float, total_map_size: int, base_elevation: float, base_dryness: float):
         self._min_region_expansions: int = min_region_expansions
         self._max_region_expansions: int = max_region_expansions
         self._min_region_size: int = int(min_region_size_pct * total_map_size)
+
+        self._base_elevation: float = base_elevation
+        self._base_dryness: float = base_dryness
 
         self._region_key_to_region: Dict[int, Region] = dict()
         self._current_region: Optional[Region] = None
@@ -61,7 +64,10 @@ class RegionLayer(object):
             region: Region = self[region_key]
             if region.base_color != (0, 0, 0):
                 for h in region.hexes:
-                    h_color = [h.elevation * c for c in region.base_color]
+                    h_color = [(h.elevation * c * 2) for c in region.base_color]
+                    for i in range(len(h_color)):
+                        if h_color[i] > 255:
+                            h_color[i] = 255
                     pygame.draw.polygon(surface, h_color, h.vertices)
 
             pygame.draw.polygon(surface, region_center_color, region.get_vertices(), 4)
@@ -137,7 +143,7 @@ class RegionLayer(object):
         for region_key in self.keys():
             region: Region = self[region_key]
             region.set_exterior_details()
-            region.set_geographic_details()
+            region.set_geographic_details(self._base_elevation, self._base_dryness)
 
     def establish_regions_to_merge(self):
         """

@@ -2,8 +2,8 @@ import math
 from typing import List, Tuple, Optional, Set
 
 from src.processing.hex import Hex
-from src.types.pathfinding import Pathfinding
-from src.types.terraform import Terraform
+from src.state.pathfinding import Pathfinding
+from src.state.terraform import Terraform
 from src.util.constants import path_find_mode
 
 
@@ -69,7 +69,7 @@ class HexUtils(object):
     @staticmethod
     def distance(h: Hex, hex_types: List[Terraform]) -> float:
         """
-        Find the hex distance from start hex to any hex of target types.
+        Find the hex distance from start hex to any hex of target state.
         """
         shortest_distance: float = float('inf')
         end: Hex = HexUtils.expand_until_hit(h, hex_types)
@@ -93,10 +93,12 @@ class HexUtils(object):
     @staticmethod
     def normalize(value: float) -> float:
         """
-        Normalize a value to between 0 and 1.
+        Normalize a value to between -1 and 1.
         """
         normalized: float = value / HexUtils.MAX_DISTANCE
         if normalized > 1:
             normalized = 1
+        elif normalized < -1:
+            normalized = -1
 
         return normalized
