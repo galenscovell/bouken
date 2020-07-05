@@ -5,7 +5,7 @@ from pygame import freetype
 
 from src.processing.layer_regions import RegionLayer
 from src.processing.region import Region
-from src.util.constants import region_center_color
+from src.util.constants import text_color
 
 
 class FeatureLayer(object):
@@ -18,23 +18,11 @@ class FeatureLayer(object):
             self.regions[region_id] = region_layer[region_id]
 
     def debug_render(self, surface: pygame.Surface, font: freetype.Font):
-        for region_key in self.regions.keys():
-            region: Region = self.regions[region_key]
-            center: Tuple[int, int] = region.get_centroid()
-
-            label: str = f'{region.region_id}'
-            if region.is_coastal:
-                label += 'C'
-            if region.near_lake:
-                label += 'L'
-            if region.near_river:
-                label += 'R'
-            if region.is_secluded:
-                label += 'A'
-            if region.is_surrounded:
-                label += 'S'
-
-            font.render_to(surface, (center[0] - 12, center[1]), label, region_center_color)
+        return
+        # for region_key in self.regions.keys():
+        #     region: Region = self.regions[region_key]
+        #     center: Tuple[int, int] = region.get_centroid()
+        #     font.render_to(surface, (center[0] - 32, center[1] + 12), str(region.biome.name), text_color)
 
     def construct(self):
         """
@@ -44,66 +32,66 @@ class FeatureLayer(object):
         """
         return
 
-    def _handle_scorched_biome(self):
+    def _handle_bare_biome(self):
         """
         Vegetation  Life        Features
-        Limited     Limited     Mountains, rocky, caves
-        """
-        return
-
-    def _handle_tundra_biome(self):
-        """
-        Vegetation  Life        Features
-        Reduced     Reduced     Permafrost, caverns
+        1           1           Mountains, rocky, caves
         """
         return
 
     def _handle_snow_biome(self):
         """
         Vegetation  Life        Features
-        Limited     Reduced     Snow, ice lakes, ice caverns
+        1           1           Snow, caverns (ice)
         """
         return
 
-    def _handle_cold_desert_biome(self):
+    def _handle_tundra_biome(self):
         """
         Vegetation  Life        Features
-        Limited     Limited     Snow, sand
+        2           3           Cold wasteland, permafrost, rocky
         """
         return
 
-    def _handle_deciduous_biome(self):
+    def _handle_temperate_desert_biome(self):
         """
         Vegetation  Life        Features
-        High        High        Forests, marshes
+        2           3           Snow and sand (seasonal), salt
+        """
+        return
+
+    def _handle_temperate_forest(self):
+        """
+        Vegetation  Life        Features
+        5           5           Mountains, hills, dense canopy, fog
         """
         return
 
     def _handle_taiga_biome(self):
         """
         Vegetation  Life        Features
-        High        High        Boreal forests
+        3           3           Forests (boreal)
         """
         return
 
-    def _handle_hot_desert_biome(self):
+    def _handle_tropical_desert_biome(self):
         """
         Vegetation  Life        Features
-        Limited     Limited     Sand, dunes
+        1           2           Sand, dunes, flat, oasis
         """
         return
 
     def _handle_grassland_biome(self):
         """
         Vegetation  Life        Features
-        High        High        Prairies, canyons
+        3           4           Prairies, savannas, canyons, sparse vegetation
         """
         return
 
-    def _handle_tropical_biome(self):
+    def _handle_tropical_forest(self):
         """
         Vegetation  Life        Features
-        High        High        Jungles
+        5           5           Jungles, tall tress/dense canopy, fog
         """
         return
 
@@ -134,7 +122,7 @@ class FeatureLayer(object):
 
     def _place_structures(self):
         """
-        Place structure/temple/town/fortress/ruins features.
+        Place structure/temple/town/fortress/outposts/village/ruins features.
         """
         return
 

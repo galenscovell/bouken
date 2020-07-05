@@ -6,7 +6,7 @@ import pygame
 
 from src.processing.hex import Hex
 from src.state.terraform import Terraform
-from src.util.constants import ocean_color, dryness_color
+from src.util.constants import ocean_color, dryness_color, freshwater_color
 from src.util.hex_utils import HexUtils
 
 
@@ -110,8 +110,14 @@ class BaseLayer(object):
                 # pygame.draw.polygon(surface, elevation_color, h.vertices)
                 # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
                 # pygame.draw.polygon(surface, dryness_color, h.vertices)
+            # elif h.is_ocean():
+            #     h_color = [(c - (h.depth * c)) for c in ocean_color]
+            #     for i in range(len(h_color)):
+            #         if h_color[i] > 255:
+            #             h_color[i] = 255
+            #     pygame.draw.polygon(surface, h_color, h.vertices)
             else:
-                h_color = [(c - (h.depth * c)) for c in ocean_color]
+                h_color = [(c - (h.depth * c)) for c in freshwater_color]
                 for i in range(len(h_color)):
                     if h_color[i] > 255:
                         h_color[i] = 255
@@ -152,7 +158,7 @@ class BaseLayer(object):
         delta: List[Tuple[int, int]] = [(h.x + dx, h.y + dy) for dx, dy in self._secondary_neighbors]
         return [self[x, y] for x, y in delta if x > -1 and y > -1 and self[x, y]]
 
-    def _update_hex_neighbors(self):
+    def update_hex_neighbors(self):
         """
         Update the neighbor states for all hexes in the grid.
         """
@@ -185,7 +191,7 @@ class BaseLayer(object):
         """
         Grow land hexes across grid.
         """
-        self._update_hex_neighbors()
+        self.update_hex_neighbors()
         for h in self.generator():
             if not h.is_land() and h.total[Terraform.Land] > 6:
                 h.set_land()
@@ -199,7 +205,7 @@ class BaseLayer(object):
         """
         Remove stray patches of land across grid.
         """
-        self._update_hex_neighbors()
+        self.update_hex_neighbors()
         for h in self.generator():
             if h.is_land() and h.direct[Terraform.Land] < 4:
                 h.set_ocean()
@@ -256,7 +262,7 @@ class BaseLayer(object):
         if ocean_hexes:
             found_oceans.append(list(ocean_hexes))
 
-        # Turn all 'oceans" smaller than the largest into land
+        # Turn all 'oceans" smaller than the largest one into land
         if len(found_oceans) > 1:
             found_oceans.sort(key=len, reverse=True)
             for ocean in found_oceans[1:]:

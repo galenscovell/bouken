@@ -7,20 +7,26 @@ from src.processing.layer_feature import FeatureLayer
 from src.processing.layer_geography import GeographyLayer
 from src.processing.layer_islands import IslandLayer
 from src.processing.layer_regions import RegionLayer
+from src.state.humidity import Humidity
+from src.state.temperature import Temperature
+from src.util.biome_calculator import BiomeCalculator
 from src.util.compact_json_encoder import CompactJsonEncoder
 from src.util.constants import background_color, update_rate, frame_rate
 
 
 class MapGenerator:
     """
-    Procedurally generates hexagon-based maps composed of land features and political regions.
+    Procedurally generates hexagon-based maps composed of land features and regions.
     """
-
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
-                 terraform_iterations: int, min_island_size: int, min_lake_expansions: int,
-                 max_lake_expansions: int, min_lake_amount: int, max_lake_amount: int, base_elevation: float,
-                 base_dryness: float, min_region_expansions: int, max_region_expansions: int,
-                 min_region_size_pct: float):
+                 terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature,
+                 min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float):
+        # Biome
+        self.temperature: Temperature = temperature
+        self.humidity: Humidity = humidity
+        self.elevation_modifier, self.dryness_modifier, self.min_lakes, self.max_lakes, self.min_lake_expansions, \
+            self.max_lake_expansions = BiomeCalculator.calculate_climate_modifiers(temperature, humidity)
+
         # Base parameters
         self.pixel_width: int = pixel_width
         self.hex_diameter: int = hex_size
@@ -37,20 +43,15 @@ class MapGenerator:
         self.island_layer: Optional[IslandLayer] = None
 
         # Geography parameters
-        self.min_lake_expansions: int = min_lake_expansions
-        self.max_lake_expansions: int = max_lake_expansions
-        self.min_lake_amount: int = min_lake_amount
-        self.max_lake_amount: int = max_lake_amount
         self.geography_layer: Optional[GeographyLayer] = None
 
         # Region parameters
         self.min_region_expansions: int = min_region_expansions
         self.max_region_expansions: int = max_region_expansions
         self.min_region_size_pct: float = min_region_size_pct
-        self.base_elevation: float = base_elevation
-        self.base_dryness: float = base_dryness
         self.region_layer: Optional[RegionLayer] = None
 
+        # Feature parameters
         self.feature_layer: Optional[FeatureLayer] = None
 
         # self.generate()
@@ -78,7 +79,7 @@ class MapGenerator:
 
         print(' -> Calculating geographic details')
         self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions,
-                                              self.min_lake_amount, self.max_lake_amount)
+                                              self.min_lakes, self.max_lakes)
 
         running = True
         while running:
@@ -88,7 +89,7 @@ class MapGenerator:
         print(' -> Generating regions')
         self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions,
                                         self.min_region_size_pct, self.base_layer.total_usable_hexes(),
-                                        self.base_elevation, self.base_dryness)
+                                        self.elevation_modifier, self.dryness_modifier)
 
         running = True
         while running:
@@ -105,12 +106,16 @@ class MapGenerator:
         self.feature_layer = FeatureLayer(self.region_layer)
         self.feature_layer.construct()
 
-        print(' -> Serializing')
-        self.serialize()
+        # self.debug_save()
+
+        # print(' -> Serializing')
+        # self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {
             'dimensions': (self.base_layer.actual_width, self.base_layer.actual_height),
+            'temperature': self.temperature.name,
+            'humidity': self.humidity.name,
             'islands': self.island_layer.serialize(),
             'regions': self.region_layer.serialize(),
             'hexes': self.base_layer.serialize()
@@ -118,6 +123,23 @@ class MapGenerator:
 
         string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
         return string
+
+    def debug_save(self):
+        import pygame
+        from pygame import freetype
+
+        pygame.init()
+        surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
+        pygame.display.set_caption('Bouken Map Generation Debug')
+        font = freetype.Font('source-code-pro.ttf', 12)
+
+        self.base_layer.debug_render(surface)
+        self.region_layer.debug_render(surface)
+        self.feature_layer.debug_render(surface, font)
+
+        pygame.image.save(surface, f'sample_output/{self.temperature.name}_{self.humidity.name}.jpg')
+
+        pygame.quit()
 
     def debug_render(self, realtime=False):
         import pygame
@@ -174,8 +196,8 @@ class MapGenerator:
                         if not processing:
                             self.island_layer.clean_up(self.base_layer)
                             self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
-                                                                  self.max_lake_expansions, self.min_lake_amount,
-                                                                  self.max_lake_amount)
+                                                                  self.max_lake_expansions, self.min_lakes,
+                                                                  self.max_lakes)
                             island_filling = False
                             placing_freshwater = True
                     elif placing_freshwater:
@@ -186,7 +208,7 @@ class MapGenerator:
                                                             self.max_region_expansions,
                                                             self.min_region_size_pct,
                                                             self.base_layer.total_usable_hexes(),
-                                                            self.base_elevation, self.base_dryness)
+                                                            self.elevation_modifier, self.dryness_modifier)
 
                             placing_freshwater = False
                             region_filling = True

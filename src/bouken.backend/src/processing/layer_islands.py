@@ -6,7 +6,7 @@ import pygame
 from src.processing.hex import Hex
 from src.processing.island import Island
 from src.processing.layer_base import BaseLayer
-from src.util.constants import island_color
+from src.util.constants import island_fill_color
 
 
 class IslandLayer(object):
@@ -49,7 +49,7 @@ class IslandLayer(object):
     def debug_render(self, surface: pygame.Surface):
         for island_key in self.keys():
             island: Island = self._island_key_to_island[island_key]
-            pygame.draw.polygon(surface, island_color, island.get_vertices())
+            pygame.draw.polygon(surface, island_fill_color, island.get_vertices())
 
     def serialize(self) -> dict:
         island_map: dict = {}

@@ -8,8 +8,7 @@ from shapely.ops import unary_union
 from src.state.biome import Biome
 from src.processing.hex import Hex
 from src.state.terraform import Terraform
-from src.util.constants import scorched_color, tundra_color, snow_color, deciduous_color, cold_desert_color, \
-    taiga_color, hot_desert_color, grassland_color, tropical_color
+from src.util.biome_calculator import BiomeCalculator
 
 
 class Region(object):
@@ -40,7 +39,7 @@ class Region(object):
 
         self.avg_elevation: float = 0.0
         self.avg_dryness: float = 0.0
-        self.biome: Biome = Biome.Scorched
+        self.biome: Biome = Biome.Bare
         self.base_color: Tuple[int, int, int] = (0, 0, 0)
 
         start_hex.set_region(self.region_id)
@@ -133,7 +132,7 @@ class Region(object):
 
                     self.exterior_hexes.add(h)
 
-    def set_geographic_details(self, base_elevation: float, base_dryness: float):
+    def set_geographic_details(self, elevation_modifier: float, dryness_modifier: float):
         """
         Find this region's exterior hexes and its overall status geographically.
         """
@@ -158,50 +157,17 @@ class Region(object):
         self.is_secluded = len(self.neighbor_region_ids) < 1
         self.is_surrounded = not self.is_coastal and not self.is_secluded
 
-        self.avg_elevation = avg_elevation / len(self.hexes)
-        self.avg_dryness = avg_dryness / len(self.hexes)
-        self.biome = self._determine_biome(self.avg_elevation, self.avg_dryness, base_elevation, base_dryness)
+        self.avg_elevation = (avg_elevation / len(self.hexes)) + elevation_modifier
+        if self.avg_elevation > 1:
+            self.avg_elevation = 1
+        elif self.avg_elevation < 0:
+            self.avg_elevation = 0
 
-    def _determine_biome(self, elevation: float, dryness: float, base_elevation: float, base_dryness: float) -> Biome:
-        dryness += base_dryness
-        if dryness > 1:
-            dryness = 1
-        elif dryness < 0:
-            dryness = 0
+        self.avg_dryness = (avg_dryness / len(self.hexes)) + dryness_modifier
+        if self.avg_dryness > 1:
+            self.avg_dryness = 1
+        elif self.avg_dryness < 0:
+            self.avg_dryness = 0
 
-        elevation += base_elevation
-        if elevation > 1:
-            elevation = 1
-        elif elevation < 0:
-            elevation = 0
-
-        if 0.6 < elevation <= 1:
-            if 0.6 < dryness <= 1:
-                self.base_color = scorched_color
-                return Biome.Scorched
-            elif 0.3 < dryness <= 0.6:
-                self.base_color = tundra_color
-                return Biome.Tundra
-            else:
-                self.base_color = snow_color
-                return Biome.Snow
-        elif 0.3 < elevation <= 0.6:
-            if 0.6 < dryness <= 1:
-                self.base_color = cold_desert_color
-                return Biome.ColdDesert
-            elif 0.3 < dryness <= 0.6:
-                self.base_color = deciduous_color
-                return Biome.Deciduous
-            else:
-                self.base_color = taiga_color
-                return Biome.Taiga
-        else:
-            if 0.6 < dryness <= 1:
-                self.base_color = hot_desert_color
-                return Biome.HotDesert
-            elif 0.3 < dryness <= 0.6:
-                self.base_color = grassland_color
-                return Biome.Grassland
-            else:
-                self.base_color = tropical_color
-                return Biome.Tropical
+        self.biome = BiomeCalculator.determine_biome(self.avg_elevation, self.avg_dryness)
+        self.base_color = BiomeCalculator.get_biome_base_color(self.biome)

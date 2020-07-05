@@ -8,7 +8,7 @@ from src.processing.island import Island
 from src.processing.layer_islands import IslandLayer
 from src.processing.region import Region
 from src.state.terraform import Terraform
-from src.util.constants import region_center_color
+from src.util.constants import text_color
 from src.util.hex_utils import HexUtils
 
 
@@ -18,13 +18,13 @@ class RegionLayer(object):
     Interactions directly with this object deal with the Regions dict, its primary data.
     """
     def __init__(self, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int,
-                 min_region_size_pct: float, total_map_size: int, base_elevation: float, base_dryness: float):
+                 min_region_size_pct: float, total_map_size: int, elevation_modifier: float,
+                 dryness_modifier: float):
         self._min_region_expansions: int = min_region_expansions
         self._max_region_expansions: int = max_region_expansions
         self._min_region_size: int = int(min_region_size_pct * total_map_size)
-
-        self._base_elevation: float = base_elevation
-        self._base_dryness: float = base_dryness
+        self._elevation_modifier: float = elevation_modifier
+        self._dryness_modifier: float = dryness_modifier
 
         self._region_key_to_region: Dict[int, Region] = dict()
         self._current_region: Optional[Region] = None
@@ -64,13 +64,13 @@ class RegionLayer(object):
             region: Region = self[region_key]
             if region.base_color != (0, 0, 0):
                 for h in region.hexes:
-                    h_color = [(h.elevation * c * 2) for c in region.base_color]
+                    h_color = [(h.elevation * c * 1.8) for c in region.base_color]
                     for i in range(len(h_color)):
                         if h_color[i] > 255:
                             h_color[i] = 255
                     pygame.draw.polygon(surface, h_color, h.vertices)
 
-            pygame.draw.polygon(surface, region_center_color, region.get_vertices(), 4)
+            pygame.draw.polygon(surface, text_color, region.get_vertices(), 2)
 
             # pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
             # font.render_to(surface, region_center, str(region_key), region_center_color)
@@ -80,6 +80,7 @@ class RegionLayer(object):
         for region_id in self.keys():
             region: Region = self[region_id]
             region_map[str(region_id)] = {
+                'biome': region.biome.name,
                 'island-id': region.island_id,
                 'area': region.area,
                 'neighboring-region-ids': list(region.neighbor_region_ids),
@@ -143,7 +144,7 @@ class RegionLayer(object):
         for region_key in self.keys():
             region: Region = self[region_key]
             region.set_exterior_details()
-            region.set_geographic_details(self._base_elevation, self._base_dryness)
+            region.set_geographic_details(self._elevation_modifier, self._dryness_modifier)
 
     def establish_regions_to_merge(self):
         """
@@ -190,20 +191,23 @@ class RegionLayer(object):
             if len(region.hexes) < 4:
                 to_remove.append(region_key)
 
-        new_ocean_hexes: List[Hex] = []
+        new_water_hexes: List[Hex] = []
         for region_key in to_remove:
             region = self[region_key]
             for h in region.hexes:
-                h.set_ocean()
                 h.unset_island()
                 h.unset_region()
-                new_ocean_hexes.append(h)
+                new_water_hexes.append(h)
 
             island: Island = island_layer[region.island_id]
             island.region_keys.remove(region_key)
             del self[region_key]
 
         # Calculate water depth for the new ocean hexes
-        for h in new_ocean_hexes:
+        for h in new_water_hexes:
+            if h.direct[Terraform.Lake] + h.direct[Terraform.River] > 5:
+                h.set_lake()
+            else:
+                h.set_ocean()
             depth: float = HexUtils.distance(h, [Terraform.Land])
             h.depth = depth

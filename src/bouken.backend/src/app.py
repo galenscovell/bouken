@@ -7,6 +7,9 @@ Bouken backend API.
 import os
 import sys
 
+from src.state.humidity import Humidity
+from src.state.temperature import Temperature
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from fastapi import Depends, FastAPI
@@ -91,14 +94,11 @@ if __name__ == '__main__':
         required_land_pct=0.4,
         terraform_iterations=24,
         min_island_size=12,
-        min_lake_expansions=2,
-        max_lake_expansions=6,
-        min_lake_amount=2,
-        max_lake_amount=6,
-        base_elevation=0,
-        base_dryness=0,
+        humidity=Humidity.Average,
+        temperature=Temperature.Temperate,
         min_region_expansions=2,
         max_region_expansions=5,
         min_region_size_pct=0.0125
     )
+
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')

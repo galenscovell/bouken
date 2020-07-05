@@ -59,20 +59,8 @@ class Hex(object):
         return hash((self.x, self.y))
 
     def serialize(self):
-        type_str: str = ''
-        if self.is_land():
-            type_str = 'land'
-        elif self.is_ocean():
-            type_str = 'ocean'
-        elif self.is_lake():
-            type_str = 'lake'
-        elif self.is_coast():
-            type_str = 'coast'
-        elif self.is_river():
-            type_str = 'river'
-
         return {
-            'type': type_str,
+            'type': self._state.name,
             'elevation': self.elevation,
             'dryness': self.dryness,
             'depth': self.depth,
