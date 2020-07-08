@@ -6,14 +6,14 @@ from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
 from src.state.biome import Biome
-from src.processing.hex import Hex
+from src.processing.exterior.hex import Hex
 from src.state.terraform import Terraform
 from src.util.biome_calculator import BiomeCalculator
 
 
 class Region(object):
     """
-    Defines a political region of a map, composed of multiple hexes.
+    Defines a region of a map, composed of multiple hexes.
     """
     def __init__(self, region_id: int, island_id: int, start_hex: Hex, expansions: int):
         self.region_id: int = region_id

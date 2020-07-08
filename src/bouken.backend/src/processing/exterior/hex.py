@@ -9,11 +9,11 @@ class Hex(object):
     """
     Defines a single hexagon cell.
     """
-    def __init__(self, uuid: int, x: int, y: int):
+    def __init__(self, uid: int, x: int, y: int):
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
         self.y: int = y
-        self.uuid: int = uuid
+        self.uid: int = uid
 
         self.pixel_center_x: int = 0
         self.pixel_center_y: int = 0
@@ -31,8 +31,9 @@ class Hex(object):
         self._on_island: bool = False
         self._in_region: bool = False
 
-        self._state_options: List[Terraform] = [
-            Terraform.Land, Terraform.Coast, Terraform.Ocean, Terraform.Lake, Terraform.River]
+        self._state_options: List[Terraform] = [Terraform.Land, Terraform.Coast,
+                                                Terraform.Ocean, Terraform.Lake,
+                                                Terraform.River]
 
         self.island_id: int = -1
         self.region_id: int = -1
@@ -47,12 +48,9 @@ class Hex(object):
         self.pixel_center_x = width_radius + self.x * horizontal_spacing
         self.pixel_center_y = height_radius + self.y * vertical_spacing
 
-    def __str__(self) -> str:
-        return f'[{self.x}, {self.y}]'
-
     def __eq__(self, other) -> bool:
         if isinstance(other, Hex):
-            return self.uuid == other.uuid
+            return self.uid == other.uid
         return False
 
     def __hash__(self):
@@ -96,6 +94,21 @@ class Hex(object):
     def set_river(self):
         self._state = Terraform.River
 
+    def is_land(self) -> bool:
+        return self._state == Terraform.Land
+
+    def is_coast(self) -> bool:
+        return self._state == Terraform.Coast
+
+    def is_ocean(self) -> bool:
+        return self._state == Terraform.Ocean
+
+    def is_lake(self) -> bool:
+        return self._state == Terraform.Lake
+
+    def is_river(self) -> bool:
+        return self._state == Terraform.River
+
     def set_island(self, island_id: int):
         self._on_island = True
         self.island_id = island_id
@@ -111,21 +124,6 @@ class Hex(object):
     def unset_region(self):
         self._in_region = False
         self.region_id = -1
-
-    def is_land(self) -> bool:
-        return self._state == Terraform.Land
-
-    def is_coast(self) -> bool:
-        return self._state == Terraform.Coast
-
-    def is_ocean(self) -> bool:
-        return self._state == Terraform.Ocean
-
-    def is_lake(self) -> bool:
-        return self._state == Terraform.Lake
-
-    def is_river(self) -> bool:
-        return self._state == Terraform.River
 
     def is_on_island(self) -> bool:
         return self._on_island is True

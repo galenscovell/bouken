@@ -3,10 +3,10 @@ from typing import List, Optional, Dict, KeysView, Set
 
 import pygame
 
-from src.processing.hex import Hex
-from src.processing.island import Island
-from src.processing.layer_islands import IslandLayer
-from src.processing.region import Region
+from src.processing.exterior.hex import Hex
+from src.processing.exterior.island import Island
+from src.processing.exterior.island_layer import IslandLayer
+from src.processing.exterior.region import Region
 from src.state.terraform import Terraform
 from src.util.constants import text_color
 from src.util.hex_utils import HexUtils
@@ -188,7 +188,7 @@ class RegionLayer(object):
         to_remove: List[int] = []
         for region_key in self.keys():
             region = self[region_key]
-            if len(region.hexes) < 4:
+            if len(region.hexes) < 5:
                 to_remove.append(region_key)
 
         new_water_hexes: List[Hex] = []

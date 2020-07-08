@@ -1,8 +1,8 @@
 import random
 from typing import List, Set, Tuple, Optional
 
-from src.processing.hex import Hex
-from src.processing.layer_base import BaseLayer
+from src.processing.exterior.hex import Hex
+from src.processing.exterior.base_layer import BaseLayer
 from src.state.terraform import Terraform
 from src.util.hex_utils import HexUtils
 

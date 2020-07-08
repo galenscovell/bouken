@@ -4,9 +4,9 @@ from typing import List, Optional, Tuple, Set
 
 import pygame
 
-from src.processing.hex import Hex
+from src.processing.exterior.hex import Hex
 from src.state.terraform import Terraform
-from src.util.constants import ocean_color, dryness_color, freshwater_color
+from src.util.constants import dryness_color, freshwater_color
 from src.util.hex_utils import HexUtils
 
 
@@ -98,7 +98,7 @@ class BaseLayer(object):
     def serialize(self) -> dict:
         hexes: dict = {}
         for h in self.generator():
-            hexes[str(h.uuid)] = h.serialize()
+            hexes[str(h.uid)] = h.serialize()
 
         return hexes
 
@@ -212,7 +212,7 @@ class BaseLayer(object):
 
     def _enforce_ocean_border(self):
         """
-        Ensure a hex border of ocean hexes on map.
+        Ensure a border of ocean hexes on map.
         """
         xs: List[int] = [0, 1, self._columns, self._columns - 1]
         ys: List[int] = [0, 1, self._rows - 2, self._rows - 3]

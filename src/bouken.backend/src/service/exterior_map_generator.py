@@ -2,11 +2,11 @@ import json
 import sys
 from typing import Optional
 
-from src.processing.layer_base import BaseLayer
-from src.processing.layer_feature import FeatureLayer
-from src.processing.layer_geography import GeographyLayer
-from src.processing.layer_islands import IslandLayer
-from src.processing.layer_regions import RegionLayer
+from src.processing.exterior.base_layer import BaseLayer
+from src.processing.exterior.feature_layer import FeatureLayer
+from src.processing.exterior.geography_layer import GeographyLayer
+from src.processing.exterior.island_layer import IslandLayer
+from src.processing.exterior.region_layer import RegionLayer
 from src.state.humidity import Humidity
 from src.state.temperature import Temperature
 from src.util.biome_calculator import BiomeCalculator
@@ -14,9 +14,9 @@ from src.util.compact_json_encoder import CompactJsonEncoder
 from src.util.constants import background_color, update_rate, frame_rate
 
 
-class MapGenerator:
+class ExteriorMapGenerator:
     """
-    Procedurally generates hexagon-based maps composed of land features and regions.
+    Procedurally generates hexagon-based exterior maps composed of land features and regions.
     """
     def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
                  terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature,
@@ -55,7 +55,7 @@ class MapGenerator:
         self.feature_layer: Optional[FeatureLayer] = None
 
         # self.generate()
-        self.debug_render(realtime=True)
+        self.debug_render()
 
     def generate(self):
         acceptable: bool = False
@@ -141,13 +141,13 @@ class MapGenerator:
 
         pygame.quit()
 
-    def debug_render(self, realtime=False):
+    def debug_render(self):
         import pygame
         from pygame import freetype
 
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
-        pygame.display.set_caption('Bouken Map Generation Debug')
+        pygame.display.set_caption('Bouken Exterior Map Debug')
         font = freetype.Font('source-code-pro.ttf', 12)
 
         clock = pygame.time.Clock()
@@ -162,94 +162,82 @@ class MapGenerator:
         merging = False
         feature_filling = False
 
-        if not realtime:
-            self.generate()
-
         running = True
         while running:
-            if realtime:
-                event = pygame.event.poll()
-                if event.type == pygame.QUIT:
-                    running = False
+            event = pygame.event.poll()
+            if event.type == pygame.QUIT:
+                running = False
 
-                update_tick -= 1
-                if update_tick <= 0:
-                    update_tick = update_rate
+            update_tick -= 1
+            if update_tick <= 0:
+                update_tick = update_rate
 
-                    if self.terraform_iterations > 0:
-                        self.base_layer.terraform()
-                        self.terraform_iterations -= 1
+                if self.terraform_iterations > 0:
+                    self.base_layer.terraform()
+                    self.terraform_iterations -= 1
 
-                        if self.terraform_iterations == 0:
-                            self.base_layer.finalize()
+                    if self.terraform_iterations == 0:
+                        self.base_layer.finalize()
 
-                            if self.base_layer.has_enough_land():
-                                self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
-                                self.base_layer.debug_render(surface)
-                                terraforming = False
-                                island_filling = True
-                            else:
-                                self.base_layer.randomize()
-                                self.terraform_iterations = initial_terraform_iterations
-                    elif island_filling:
-                        processing: bool = self.island_layer.discover()
-                        if not processing:
-                            self.island_layer.clean_up(self.base_layer)
-                            self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
-                                                                  self.max_lake_expansions, self.min_lakes,
-                                                                  self.max_lakes)
-                            island_filling = False
-                            placing_freshwater = True
-                    elif placing_freshwater:
-                        processing: bool = self.geography_layer.place_freshwater()
-                        if not processing:
-                            self.geography_layer.finalize()
-                            self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions,
-                                                            self.max_region_expansions,
-                                                            self.min_region_size_pct,
-                                                            self.base_layer.total_usable_hexes(),
-                                                            self.elevation_modifier, self.dryness_modifier)
-
-                            placing_freshwater = False
-                            region_filling = True
-                    elif region_filling:
-                        processing: bool = self.region_layer.discover(self.island_layer)
-                        if not processing:
-                            self.region_layer.establish_regions_to_merge()
-                            region_filling = False
-                            merging = True
-                    elif merging:
-                        processing: bool = self.region_layer.merge(self.island_layer)
-                        if not processing:
-                            self.region_layer.remove_stray_regions(self.island_layer)
-                            self.feature_layer = FeatureLayer(self.region_layer)
-                            merging = False
-                            feature_filling = True
-                    elif feature_filling:
-                        self.feature_layer.construct()
-
-                if terraforming or placing_freshwater:
-                    self.base_layer.debug_render(surface)
+                        if self.base_layer.has_enough_land():
+                            self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
+                            self.base_layer.debug_render(surface)
+                            terraforming = False
+                            island_filling = True
+                        else:
+                            self.base_layer.randomize()
+                            self.terraform_iterations = initial_terraform_iterations
                 elif island_filling:
-                    self.island_layer.debug_render(surface)
-                elif region_filling or merging:
-                    self.base_layer.debug_render(surface)
-                    self.region_layer.debug_render(surface)
-                else:
-                    self.base_layer.debug_render(surface)
-                    self.region_layer.debug_render(surface)
-                    self.feature_layer.debug_render(surface, font)
+                    processing: bool = self.island_layer.discover()
+                    if not processing:
+                        self.island_layer.clean_up(self.base_layer)
+                        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
+                                                              self.max_lake_expansions, self.min_lakes,
+                                                              self.max_lakes)
+                        island_filling = False
+                        placing_freshwater = True
+                elif placing_freshwater:
+                    processing: bool = self.geography_layer.place_freshwater()
+                    if not processing:
+                        self.geography_layer.finalize()
+                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions,
+                                                        self.max_region_expansions,
+                                                        self.min_region_size_pct,
+                                                        self.base_layer.total_usable_hexes(),
+                                                        self.elevation_modifier, self.dryness_modifier)
 
-                pygame.display.flip()
-                clock.tick(frame_rate)
-            else:
+                        placing_freshwater = False
+                        region_filling = True
+                elif region_filling:
+                    processing: bool = self.region_layer.discover(self.island_layer)
+                    if not processing:
+                        self.region_layer.establish_regions_to_merge()
+                        region_filling = False
+                        merging = True
+                elif merging:
+                    processing: bool = self.region_layer.merge(self.island_layer)
+                    if not processing:
+                        self.region_layer.remove_stray_regions(self.island_layer)
+                        self.feature_layer = FeatureLayer(self.region_layer)
+                        merging = False
+                        feature_filling = True
+                elif feature_filling:
+                    self.feature_layer.construct()
+
+            if terraforming or placing_freshwater:
                 self.base_layer.debug_render(surface)
+            elif island_filling:
                 self.island_layer.debug_render(surface)
+            elif region_filling or merging:
+                self.base_layer.debug_render(surface)
+                self.region_layer.debug_render(surface)
+            else:
                 self.base_layer.debug_render(surface)
                 self.region_layer.debug_render(surface)
                 self.feature_layer.debug_render(surface, font)
-                pygame.display.flip()
-                clock.tick(frame_rate)
+
+            pygame.display.flip()
+            clock.tick(frame_rate)
 
         pygame.quit()
         sys.exit(0)

@@ -3,7 +3,7 @@ from enum import IntEnum
 
 class Terraform(IntEnum):
     """
-    The possible states of a hex due to terraforming.
+    The possible states of an exterior hex due to terraforming.
     """
     Land = 0
     Coast = 1

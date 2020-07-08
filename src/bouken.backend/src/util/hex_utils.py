@@ -1,7 +1,7 @@
 import math
 from typing import List, Tuple, Optional, Set
 
-from src.processing.hex import Hex
+from src.processing.exterior.hex import Hex
 from src.state.pathfinding import Pathfinding
 from src.state.terraform import Terraform
 from src.util.constants import path_find_mode

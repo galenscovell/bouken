@@ -7,6 +7,7 @@ Bouken backend API.
 import os
 import sys
 
+from src.service.interior_map_generator import InteriorMapGenerator
 from src.state.humidity import Humidity
 from src.state.temperature import Temperature
 
@@ -20,7 +21,7 @@ from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from src.util.logger import info, error
 from src.model.responses import StatusResponse
-from src.service.map_generator import MapGenerator
+from src.service.exterior_map_generator import ExteriorMapGenerator
 
 app = FastAPI(
     title='Bouken API',
@@ -87,18 +88,29 @@ def create(db=Depends(db_dependency)):
 
 
 if __name__ == '__main__':
-    map_gen = MapGenerator(
+    int_map_gen: InteriorMapGenerator = InteriorMapGenerator(
         pixel_width=900,
-        hex_size=10,
-        initial_land_pct=0.3,
-        required_land_pct=0.4,
-        terraform_iterations=24,
-        min_island_size=12,
-        humidity=Humidity.Average,
-        temperature=Temperature.Temperate,
-        min_region_expansions=2,
-        max_region_expansions=5,
-        min_region_size_pct=0.0125
+        pixel_height=720,
+        cell_size=20,
+        number_rooms=8,
+        min_room_size=4,
+        max_room_size=10,
+        min_corridor_length=2,
+        max_corridor_length=6,
     )
+
+    # ext_map_gen: ExteriorMapGenerator = ExteriorMapGenerator(
+    #     pixel_width=900,
+    #     hex_size=10,
+    #     initial_land_pct=0.3,
+    #     required_land_pct=0.4,
+    #     terraform_iterations=20,
+    #     min_island_size=12,
+    #     humidity=Humidity.Average,
+    #     temperature=Temperature.Temperate,
+    #     min_region_expansions=2,
+    #     max_region_expansions=5,
+    #     min_region_size_pct=0.0125
+    # )
 
     # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')
