@@ -1,1 +1,1 @@
-# bouken
+# Bouken Generator
