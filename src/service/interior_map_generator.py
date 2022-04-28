@@ -44,7 +44,7 @@ class InteriorMapGenerator(object):
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.pixel_width, self.pixel_height))
         pygame.display.set_caption('Bouken Interior Map Debug')
-        font = freetype.Font('source-code-pro.ttf', 12)
+        font = freetype.Font('res/source-code-pro.ttf', 12)
 
         clock = pygame.time.Clock()
         surface.fill(background_color)

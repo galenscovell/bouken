@@ -71,7 +71,7 @@ def status(db=Depends(db_dependency)):
 
 
 @app.post(
-    path='/',
+    path='/generate',
     response_model=StatusResponse,
     status_code=HTTP_200_OK,
     summary='Create map',
@@ -88,16 +88,17 @@ def create(db=Depends(db_dependency)):
 
 
 if __name__ == '__main__':
-    int_map_gen: InteriorMapGenerator = InteriorMapGenerator(
-        pixel_width=900,
-        pixel_height=720,
-        cell_size=20,
-        number_rooms=8,
-        min_room_size=4,
-        max_room_size=10,
-        min_corridor_length=2,
-        max_corridor_length=6,
-    )
+    print('started')
+    # int_map_gen: InteriorMapGenerator = InteriorMapGenerator(
+    #     pixel_width=900,
+    #     pixel_height=720,
+    #     cell_size=20,
+    #     number_rooms=8,
+    #     min_room_size=4,
+    #     max_room_size=10,
+    #     min_corridor_length=2,
+    #     max_corridor_length=6,
+    # )
 
     # ext_map_gen: ExteriorMapGenerator = ExteriorMapGenerator(
     #     pixel_width=900,

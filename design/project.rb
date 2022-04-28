@@ -1,9 +1,6 @@
 ==============================================================
 High Level
 ==============================================================
-System Design, Python, Docker/*Kubernetes, AWS/*Google Cloud, Java/Typescript, React (+ Phaser), HTML/SCSS, Redis, Git, Linux(Linode?), *SQLite
-
-    
 Backend: Python, Redis, SQLite. Task architecture (cloud?)
 Frontend: React + Phaser, HTML/SCSS. Responsive design (mobile via ReactNative?)
 Infra: Docker/Kubernetes deployed to cloud?
