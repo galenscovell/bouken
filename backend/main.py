@@ -13,17 +13,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from fastapi import Depends, FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
-from backend.util.logger import info, error
 from backend.model.responses import StatusResponse
 from backend.service.exterior_map_generator import ExteriorMapGenerator
 from backend.service.interior_map_generator import InteriorMapGenerator
 from backend.state.humidity import Humidity
 from backend.state.temperature import Temperature
-
+from backend.util.logger import error, info
 
 app = FastAPI(
     title='Bouken API',
