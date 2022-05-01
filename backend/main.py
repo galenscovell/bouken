@@ -31,7 +31,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "localhost:8080"],
+    allow_origins=["http://localhost:5050", "localhost:5050"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -128,4 +128,4 @@ if __name__ == '__main__':
     #     min_region_size_pct=0.0125
     # )
 
-    # uvicorn.run(app, host='0.0.0.0', port=8080, log_level='info')
+    # uvicorn.run(app, host='0.0.0.0', port=5050, log_level='info')
