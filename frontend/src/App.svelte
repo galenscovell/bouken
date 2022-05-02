@@ -22,10 +22,10 @@
 <button on:click="{() => generateExteriorMap()}">Generate Exterior</button>
 <div>
 	{#if response}
-		<p>Exterior Map JSON string: {response}</p>
+		<p>{response}</p>
 	{:else if error}
 		<p>Error encountered: {error}</p>
 	{:else}
-		<p>Waiting to hit API</p>
+		<p>Waiting to hit API...</p>
 	{/if}
 </div>

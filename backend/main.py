@@ -22,7 +22,14 @@ from backend.service.interior_map_generator import InteriorMapGenerator
 from backend.service.sqlite_service import SqliteService
 from backend.state.humidity import Humidity
 from backend.state.temperature import Temperature
-from backend.util.logger import error, info
+from backend.util.logger import Logger
+
+
+_log: Logger = Logger()
+_db_service: SqliteService = None
+_exterior_map_generator: ExteriorMapGenerator = ExteriorMapGenerator()
+_interior_map_generator: InteriorMapGenerator = InteriorMapGenerator()
+
 
 app = FastAPI(
     title='Bouken API',
@@ -39,7 +46,6 @@ app.add_middleware(
 )
 
 
-_db_service: SqliteService = None
 def db_dependency() -> SqliteService:
     global _db_service
     if not _db_service:
@@ -47,23 +53,8 @@ def db_dependency() -> SqliteService:
     return _db_service
 
 
-@app.on_event('shutdown')
-def shutdown_event() -> None:
-    info('Service shutdown')
-
-
-@app.on_event('startup')
-def startup_event() -> None:
-    info('Service startup')
-
-
 def _generate_response(status_code: int, contents: dict) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=jsonable_encoder(contents))
-
-
-@app.get('/', tags=['root'])
-async def root() -> dict:
-    return {'message': 'Welcome to Bouken'}
 
 
 @app.get(
@@ -78,7 +69,7 @@ async def status(db=Depends(db_dependency)) -> JSONResponse:
         return _generate_response(200, {'status': 200})
     except Exception as ex:
         msg = {'message': 'Error checking service health'}
-        error(msg, ex)
+        _log.error(msg, ex)
         msg.update({'exception': ex.__str__()})
         return _generate_response(HTTP_500_INTERNAL_SERVER_ERROR, msg)
 
@@ -92,8 +83,17 @@ async def status(db=Depends(db_dependency)) -> JSONResponse:
 )
 async def create(db=Depends(db_dependency)) -> JSONResponse:
     try:
-        generator: ExteriorMapGenerator = ExteriorMapGenerator()
-        m: str = generator.begin(
+        # interior_map: str = _interior_map_generator.begin(
+        #     pixel_width=900,
+        #     pixel_height=720,
+        #     cell_size=20,
+        #     number_rooms=8,
+        #     min_room_size=4,
+        #     max_room_size=10,
+        #     min_corridor_length=2,
+        #     max_corridor_length=6,
+        # )
+        exterior_map: str = _exterior_map_generator.begin(
             pixel_width=900,
             hex_size=10,
             initial_land_pct=0.3,
@@ -106,23 +106,19 @@ async def create(db=Depends(db_dependency)) -> JSONResponse:
             max_region_expansions=5,
             min_region_size_pct=0.0125
         )
-        return _generate_response(200, {'map_str': m})
+        return _generate_response(200, {'map_str': exterior_map})
     except Exception as ex:
         msg = {'message': 'Error generating map'}
-        error(msg, ex)
+        _log.error(msg, ex)
         msg.update({'exception': ex.__str__()})
         return _generate_response(HTTP_500_INTERNAL_SERVER_ERROR, msg)
 
 
-if __name__ == '__main__':
-    print('started')
-    # int_map_gen: InteriorMapGenerator = InteriorMapGenerator(
-    #     pixel_width=900,
-    #     pixel_height=720,
-    #     cell_size=20,
-    #     number_rooms=8,
-    #     min_room_size=4,
-    #     max_room_size=10,
-    #     min_corridor_length=2,
-    #     max_corridor_length=6,
-    # )
+@app.on_event('shutdown')
+def shutdown_event() -> None:
+    _log.info('Service shutdown')
+
+
+@app.on_event('startup')
+def startup_event() -> None:
+    _log.info('Service startup')

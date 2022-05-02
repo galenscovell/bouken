@@ -33,8 +33,7 @@ class ExteriorMapGenerator:
         self.initial_land_pct: float = initial_land_pct
         self.required_land_pct: float = required_land_pct
         self.terraform_iterations: int = terraform_iterations
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct,
-                                               self.required_land_pct, False)
+        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, self.required_land_pct, False)
 
         # Island parameters
         self.min_island_size: int = min_island_size
