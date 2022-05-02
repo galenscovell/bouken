@@ -10,7 +10,7 @@ class Island(object):
     """
     Defines an island of a map, composed of multiple hexes.
     """
-    def __init__(self, island_id: int, start_hex: Hex):
+    def __init__(self, island_id: int, start_hex: Hex) -> None:
         self.island_id: int = island_id
         self.hexes: List[Hex] = [start_hex]
         self.region_keys: Set[int] = set()
@@ -23,14 +23,14 @@ class Island(object):
 
         start_hex.set_island(self.island_id)
 
-    def add_hex(self, h: Hex):
+    def add_hex(self, h: Hex) -> None:
         """
         Add a hex to this island.
         """
         h.set_island(self.island_id)
         self.hexes.append(h)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """
         Refresh this island's polygon shape and area.
         """

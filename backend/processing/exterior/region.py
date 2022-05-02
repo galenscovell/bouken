@@ -15,7 +15,7 @@ class Region(object):
     """
     Defines a region of a map, composed of multiple hexes.
     """
-    def __init__(self, region_id: int, island_id: int, start_hex: Hex, expansions: int):
+    def __init__(self, region_id: int, island_id: int, start_hex: Hex, expansions: int) -> None:
         self.region_id: int = region_id
         self.island_id: int = island_id
         self.hexes: Set[Hex] = {start_hex}
@@ -44,14 +44,14 @@ class Region(object):
 
         start_hex.set_region(self.region_id)
 
-    def add_hex(self, h: Hex):
+    def add_hex(self, h: Hex) -> None:
         """
         Add a hex to this region.
         """
         h.set_region(self.region_id)
         self.hexes.add(h)
 
-    def update_shape(self, to_join_hexes=None):
+    def update_shape(self, to_join_hexes=None) -> None:
         """
         Refresh this region's polygon shape and area.
         """
@@ -85,7 +85,7 @@ class Region(object):
         """
         return self._can_expand and self._expansions > 0
 
-    def expand(self, usable_hexes: List[Hex]):
+    def expand(self, usable_hexes: List[Hex]) -> None:
         """
         Expand this region's area outward from its exterior hexes.
         """
@@ -106,13 +106,13 @@ class Region(object):
 
             self.update_shape(self._expanded_hexes)
 
-    def update_hex_neighbors(self):
+    def update_hex_neighbors(self) -> None:
         """
         Update the neighbor states for all hexes in the region.
         """
         [h.set_neighbor_states() for h in self.hexes]
 
-    def set_exterior_details(self):
+    def set_exterior_details(self) -> None:
         """
         Set hexes forming exterior perimeter as well as coast and neighboring region ids.
         """
@@ -132,7 +132,7 @@ class Region(object):
 
                     self.exterior_hexes.add(h)
 
-    def set_geographic_details(self, elevation_modifier: float, dryness_modifier: float):
+    def set_geographic_details(self, elevation_modifier: float, dryness_modifier: float) -> None:
         """
         Find this region's exterior hexes and its overall status geographically.
         """

@@ -12,7 +12,7 @@ class HexUtils(object):
     MAX_DISTANCE: float = 0
 
     @staticmethod
-    def calculate_layout(hex_size: int, pointy: bool):
+    def calculate_layout(hex_size: int, pointy: bool) -> Tuple[int, int, int, int]:
         """
         Calculate grid layout values.
         """

@@ -11,8 +11,7 @@ class GeographyLayer(object):
     """
     Defines geographic qualities of map (elevation, depth, dryness, freshwater).
     """
-    def __init__(self, base_layer: BaseLayer, min_lake_expansions: int, max_lake_expansions: int,
-                 min_lake_amount: int, max_lake_amount: int):
+    def __init__(self, base_layer: BaseLayer, min_lake_expansions: int, max_lake_expansions: int, min_lake_amount: int, max_lake_amount: int) -> None:
         self._min_lake_expansions: int = min_lake_expansions
         self._max_lake_expansions: int = max_lake_expansions
 
@@ -130,7 +129,7 @@ class GeographyLayer(object):
             return True
         return False
 
-    def finalize(self):
+    def finalize(self) -> None:
         self.base_layer.update_hex_neighbors()
 
         # Set elevation including both ocean and freshwater distances
@@ -142,7 +141,7 @@ class GeographyLayer(object):
 
         self.base_layer.update_hex_neighbors()
 
-    def set_elevation(self, include_freshwater: bool):
+    def set_elevation(self, include_freshwater: bool) -> None:
         """
         Expand out from each hex until water is hit to determine elevation grade.
         Elevation is a land hex's distance from (mostly) ocean and (minorly) freshwater.
@@ -159,7 +158,7 @@ class GeographyLayer(object):
             else:
                 h.elevation = 0
 
-    def set_dryness(self):
+    def set_dryness(self) -> None:
         """
         Expand out from each hex until lake is hit to determine moisture grade.
         Dryness is a land hex's distance from (mostly) freshwater sources and (minorly) ocean.
@@ -176,7 +175,7 @@ class GeographyLayer(object):
             else:
                 h.dryness = 0
 
-    def set_depth(self):
+    def set_depth(self) -> None:
         """
         Expand out from each hex until land is hit to determine depth grade.
         Depth is an ocean hex's distance from land.

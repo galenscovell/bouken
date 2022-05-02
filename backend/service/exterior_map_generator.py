@@ -18,9 +18,7 @@ class ExteriorMapGenerator:
     """
     Procedurally generates hexagon-based exterior maps composed of land features and regions.
     """
-    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
-                 terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature,
-                 min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float):
+    def begin(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float, terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float) -> str:
         # Biome
         self.temperature: Temperature = temperature
         self.humidity: Humidity = humidity
@@ -54,10 +52,10 @@ class ExteriorMapGenerator:
         # Feature parameters
         self.feature_layer: Optional[FeatureLayer] = None
 
-        # self.generate()
-        self.debug_render()
+        return self.generate()
 
-    def generate(self):
+
+    def generate(self) -> str:
         acceptable: bool = False
         while not acceptable:
             print(' -> Terraforming')
@@ -106,10 +104,8 @@ class ExteriorMapGenerator:
         self.feature_layer = FeatureLayer(self.region_layer)
         self.feature_layer.construct()
 
-        # self.debug_save()
-
-        # print(' -> Serializing')
-        # self.serialize()
+        print(' -> Serializing')
+        return self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {
@@ -124,7 +120,7 @@ class ExteriorMapGenerator:
         string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
         return string
 
-    def debug_save(self):
+    def debug_save(self) -> None:
         import pygame
         from pygame import freetype
 
@@ -141,7 +137,7 @@ class ExteriorMapGenerator:
 
         pygame.quit()
 
-    def debug_render(self):
+    def debug_render(self) -> None:
         import pygame
         from pygame import freetype
 

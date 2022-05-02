@@ -8,10 +8,10 @@ import sqlite3
 
 
 class SqliteService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.db_file = os.path.join(os.getcwd(), 'bouken.db')
 
-    def _query(self):
+    def _query(self) -> None:
         conn = sqlite3.connect(self.db_file)
 
         try:

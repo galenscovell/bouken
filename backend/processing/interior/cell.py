@@ -4,7 +4,7 @@ from backend.state.construction import Construction
 
 
 class Cell(object):
-    def __init__(self, uid: int, x: int, y: int, size: int):
+    def __init__(self, uid: int, x: int, y: int, size: int) -> None:
         self.uid: int = uid
         self.x: int = x
         self.y: int = y
@@ -21,14 +21,14 @@ class Cell(object):
 
         self.neighbors: List[Cell] = []
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, Cell):
             return self.x == other.x and self.y == other.y
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.x, self.y))
 
-    def serialize(self):
+    def serialize(self) -> dict:
         return {
             'type': self._state.name
         }
@@ -36,30 +36,30 @@ class Cell(object):
     def get_tuple_coord(self) -> Tuple[int, int]:
         return self.x, self.y
 
-    def set_neighbor_states(self):
+    def set_neighbor_states(self) -> None:
         self.direct = [0 for s in self._state_options]
         for c in self.neighbors:
             self.direct[c._state] += 1
 
-    def set_floor(self):
+    def set_floor(self) -> None:
         self._state = Construction.Floor
 
-    def set_wall(self):
+    def set_wall(self) -> None:
         self._state = Construction.Wall
 
-    def set_empty(self):
+    def set_empty(self) -> None:
         self._state = Construction.Empty
 
-    def set_padding(self):
+    def set_padding(self) -> None:
         self._state = Construction.Padding
 
-    def set_corridor(self):
+    def set_corridor(self) -> None:
         self._state = Construction.Corridor
 
-    def set_corner(self):
+    def set_corner(self) -> None:
         self._state = Construction.Corner
 
-    def set_water(self):
+    def set_water(self) -> None:
         self._state = Construction.Water
 
     def is_floor(self) -> bool:
@@ -83,11 +83,11 @@ class Cell(object):
     def is_water(self) -> bool:
         return self._state == Construction.Water
 
-    def set_room(self, room_id: int):
+    def set_room(self, room_id: int) -> None:
         self._in_room = True
         self.room_id = room_id
 
-    def unset_room(self):
+    def unset_room(self) -> None:
         self._in_room = False
         self.room_id = -1
 

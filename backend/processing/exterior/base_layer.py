@@ -18,8 +18,7 @@ class BaseLayer(object):
     Hexes can be either pointy or flat topped - calculations will shift accordingly.
     Allows for both indexed set/get and generator looping of all hexes.
     """
-    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float,
-                 pointy: bool = True):
+    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float, pointy: bool = True) -> None:
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
         self.initial_land_pct: float = initial_land_pct
@@ -86,7 +85,7 @@ class BaseLayer(object):
     def __len__(self) -> int:
         return self._columns * self._rows
 
-    def __setitem__(self, xy: Tuple[int, int], value):
+    def __setitem__(self, xy: Tuple[int, int], value) -> None:
         if 0 <= xy[0] < self._columns and 0 <= xy[1] < self._rows:
             self.grid[xy[0]][xy[1]] = value
 
@@ -102,7 +101,7 @@ class BaseLayer(object):
 
         return hexes
 
-    def debug_render(self, surface: pygame.Surface):
+    def debug_render(self, surface: pygame.Surface) -> None:
         for h in self.generator():
             if h.is_land() or h.is_coast():
                 pygame.draw.polygon(surface, dryness_color, h.vertices)
@@ -158,13 +157,13 @@ class BaseLayer(object):
         delta: List[Tuple[int, int]] = [(h.x + dx, h.y + dy) for dx, dy in self._secondary_neighbors]
         return [self[x, y] for x, y in delta if x > -1 and y > -1 and self[x, y]]
 
-    def update_hex_neighbors(self):
+    def update_hex_neighbors(self) -> None:
         """
         Update the neighbor states for all hexes in the grid.
         """
         [h.set_neighbor_states() for h in self.generator()]
 
-    def generator(self):
+    def generator(self) -> Optional[Hex]:
         """
         Iterate through non-null hexes in the grid.
         """
@@ -176,7 +175,7 @@ class BaseLayer(object):
 
                 yield h
 
-    def randomize(self):
+    def randomize(self) -> None:
         """
         Randomly distribute land hexes across grid.
         """
@@ -187,7 +186,7 @@ class BaseLayer(object):
             else:
                 h.set_ocean()
 
-    def terraform(self):
+    def terraform(self) -> None:
         """
         Grow land hexes across grid.
         """
@@ -196,12 +195,12 @@ class BaseLayer(object):
             if not h.is_land() and h.total[Terraform.Land] > 6:
                 h.set_land()
 
-    def finalize(self):
+    def finalize(self) -> None:
         self._remove_stray_land()
         self._enforce_ocean_border()
         self._remove_interior_oceans()
 
-    def _remove_stray_land(self):
+    def _remove_stray_land(self) -> None:
         """
         Remove stray patches of land across grid.
         """
@@ -210,7 +209,7 @@ class BaseLayer(object):
             if h.is_land() and h.direct[Terraform.Land] < 4:
                 h.set_ocean()
 
-    def _enforce_ocean_border(self):
+    def _enforce_ocean_border(self) -> None:
         """
         Ensure a border of ocean hexes on map.
         """
@@ -227,7 +226,7 @@ class BaseLayer(object):
             if h.x in xs or h.y in ys or h.get_tuple_coord() in corners:
                 h.set_ocean()
 
-    def _remove_interior_oceans(self):
+    def _remove_interior_oceans(self) -> None:
         """
         Locate any 'interior' oceans, and if present replace them with land.
         """

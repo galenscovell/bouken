@@ -19,6 +19,7 @@ from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 from backend.model.responses import StatusResponse
 from backend.service.exterior_map_generator import ExteriorMapGenerator
 from backend.service.interior_map_generator import InteriorMapGenerator
+from backend.service.sqlite_service import SqliteService
 from backend.state.humidity import Humidity
 from backend.state.temperature import Temperature
 from backend.util.logger import error, info
@@ -38,10 +39,8 @@ app.add_middleware(
 )
 
 
-_db_service = None
-
-
-def db_dependency():
+_db_service: SqliteService = None
+def db_dependency() -> SqliteService:
     global _db_service
     if not _db_service:
         _db_service = None
@@ -49,16 +48,16 @@ def db_dependency():
 
 
 @app.on_event('shutdown')
-def shutdown_event():
+def shutdown_event() -> None:
     info('Service shutdown')
 
 
 @app.on_event('startup')
-def startup_event():
+def startup_event() -> None:
     info('Service startup')
 
 
-def _generate_response(status_code: int, contents: dict):
+def _generate_response(status_code: int, contents: dict) -> JSONResponse:
     return JSONResponse(status_code=status_code, content=jsonable_encoder(contents))
 
 
@@ -93,7 +92,21 @@ async def status(db=Depends(db_dependency)) -> JSONResponse:
 )
 async def create(db=Depends(db_dependency)) -> JSONResponse:
     try:
-        return _generate_response(200, {})
+        generator: ExteriorMapGenerator = ExteriorMapGenerator()
+        m: str = generator.begin(
+            pixel_width=900,
+            hex_size=10,
+            initial_land_pct=0.3,
+            required_land_pct=0.4,
+            terraform_iterations=20,
+            min_island_size=12,
+            humidity=Humidity.Average,
+            temperature=Temperature.Temperate,
+            min_region_expansions=2,
+            max_region_expansions=5,
+            min_region_size_pct=0.0125
+        )
+        return _generate_response(200, {'map_str': m})
     except Exception as ex:
         msg = {'message': 'Error generating map'}
         error(msg, ex)
@@ -113,19 +126,3 @@ if __name__ == '__main__':
     #     min_corridor_length=2,
     #     max_corridor_length=6,
     # )
-
-    # ext_map_gen: ExteriorMapGenerator = ExteriorMapGenerator(
-    #     pixel_width=900,
-    #     hex_size=10,
-    #     initial_land_pct=0.3,
-    #     required_land_pct=0.4,
-    #     terraform_iterations=20,
-    #     min_island_size=12,
-    #     humidity=Humidity.Average,
-    #     temperature=Temperature.Temperate,
-    #     min_region_expansions=2,
-    #     max_region_expansions=5,
-    #     min_region_size_pct=0.0125
-    # )
-
-    # uvicorn.run(app, host='0.0.0.0', port=5050, log_level='info')

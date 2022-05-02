@@ -9,7 +9,7 @@ class Hex(object):
     """
     Defines a single hexagon cell.
     """
-    def __init__(self, uid: int, x: int, y: int):
+    def __init__(self, uid: int, x: int, y: int) -> None:
         assert ((x + y) % 2 == 0), f'Hex col and row must sum to an even number (found {x}, {y})'
         self.x: int = x
         self.y: int = y
@@ -41,7 +41,7 @@ class Hex(object):
         self.dryness: float = 0
         self.depth: float = 0
 
-    def construct(self, width_diameter: int, height_diameter: int, horizontal_spacing: int, vertical_spacing: int):
+    def construct(self, width_diameter: int, height_diameter: int, horizontal_spacing: int, vertical_spacing: int) -> None:
         width_radius: int = int(width_diameter / 2)
         height_radius: int = int(height_diameter / 2)
 
@@ -53,10 +53,10 @@ class Hex(object):
             return self.uid == other.uid
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.x, self.y))
 
-    def serialize(self):
+    def serialize(self) -> dict:
         return {
             'type': self._state.name,
             'elevation': self.elevation,
@@ -68,7 +68,7 @@ class Hex(object):
     def get_tuple_coord(self) -> Tuple[int, int]:
         return self.x, self.y
 
-    def set_neighbor_states(self):
+    def set_neighbor_states(self) -> None:
         self.direct = [0 for s in self._state_options]
         for h in self.direct_neighbors:
             self.direct[h._state] += 1
@@ -79,19 +79,19 @@ class Hex(object):
 
         self.total = [self.direct[n] + self.secondary[n] for n in range(len(self._state_options))]
 
-    def set_land(self):
+    def set_land(self) -> None:
         self._state = Terraform.Land
 
-    def set_coast(self):
+    def set_coast(self) -> None:
         self._state = Terraform.Coast
 
-    def set_ocean(self):
+    def set_ocean(self) -> None:
         self._state = Terraform.Ocean
 
-    def set_lake(self):
+    def set_lake(self) -> None:
         self._state = Terraform.Lake
 
-    def set_river(self):
+    def set_river(self) -> None:
         self._state = Terraform.River
 
     def is_land(self) -> bool:
@@ -109,19 +109,19 @@ class Hex(object):
     def is_river(self) -> bool:
         return self._state == Terraform.River
 
-    def set_island(self, island_id: int):
+    def set_island(self, island_id: int) -> None:
         self._on_island = True
         self.island_id = island_id
 
-    def set_region(self, region_id: int):
+    def set_region(self, region_id: int) -> None:
         self._in_region = True
         self.region_id = region_id
 
-    def unset_island(self):
+    def unset_island(self) -> None:
         self._on_island = False
         self.island_id = -1
 
-    def unset_region(self):
+    def unset_region(self) -> None:
         self._in_region = False
         self.region_id = -1
 

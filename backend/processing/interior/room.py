@@ -6,7 +6,7 @@ from backend.processing.interior.corridor import Corridor
 
 class Room(object):
     def __init__(self, room_id: int, center_cell: Cell, width: int, height: int,
-                 room_cells: List[Cell], perimeter: List[Cell], corners: List[Cell]):
+                 room_cells: List[Cell], perimeter: List[Cell], corners: List[Cell]) -> None:
         self.room_id: int = room_id
         self.center_cell: Cell = center_cell
         self.width: int = width
@@ -32,7 +32,7 @@ class Room(object):
             c.set_room(self.room_id)
             c.set_corner()
 
-    def reset_perimeter(self):
+    def reset_perimeter(self) -> None:
         corridor_cells: List[Cell] = [c.start_cell for c in self.corridors]
         for c in self._full_perimeter:
             if c in corridor_cells and c in self._full_perimeter:

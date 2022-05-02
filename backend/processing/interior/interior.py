@@ -10,8 +10,7 @@ from backend.util.constants import tropical_forest_color, background_color, trop
 
 
 class Interior(object):
-    def __init__(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int, min_room_size: int,
-                 max_room_size: int, min_corridor_length: int, max_corridor_length: int):
+    def __init__(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int, min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int) -> None:
         self._cell_size: int = cell_size
         self._number_rooms: int = number_rooms
 
@@ -86,7 +85,7 @@ class Interior(object):
 
         return cells
 
-    def debug_render(self, surface: pygame.Surface):
+    def debug_render(self, surface: pygame.Surface) -> None:
         for c in self.generator():
             if c.is_floor():
                 pygame.draw.rect(surface, tropical_forest_color, c.box)
@@ -102,7 +101,7 @@ class Interior(object):
             else:
                 pygame.draw.rect(surface, background_color, c.box)
 
-    def generator(self):
+    def generator(self) -> Optional[Cell]:
         """
         Iterate through cells in the grid.
         """
@@ -244,7 +243,7 @@ class Interior(object):
         delta: List[Tuple[int, int]] = [(c.x + dx, c.y + dy) for dx, dy in self._orthogonal_neighbors]
         return [self[x, y] for x, y in delta if x > -1 and y > -1 and self[x, y]]
 
-    def _update_neighbors(self):
+    def _update_neighbors(self) -> None:
         """
         Update the neighbor states for all cells in the grid.
         """

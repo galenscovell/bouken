@@ -4,7 +4,7 @@ from backend.processing.interior.cell import Cell
 
 
 class Corridor(object):
-    def __init__(self, start_cell: Cell, end_cell: Cell, cells: List[Cell], end_room_id: int):
+    def __init__(self, start_cell: Cell, end_cell: Cell, cells: List[Cell], end_room_id: int) -> None:
         self.start_cell: Cell = start_cell
         self.end_cell: Cell = end_cell
         self.end_room_id: int = end_room_id

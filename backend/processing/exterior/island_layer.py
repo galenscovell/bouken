@@ -14,7 +14,7 @@ class IslandLayer(object):
     Defines island layer of a map, detailing separate areas.
     Interactions directly with this object deal with the Islands dict, its primary data.
     """
-    def __init__(self, base_layer: BaseLayer, min_island_size: int):
+    def __init__(self, base_layer: BaseLayer, min_island_size: int) -> None:
         self._min_island_size: int = min_island_size
         self._random: random.Random = random.Random()
 
@@ -87,7 +87,7 @@ class IslandLayer(object):
             else:
                 return False
 
-    def expand(self):
+    def expand(self) -> None:
         """
         Expand island area outward until it can no longer expand.
         """
@@ -100,7 +100,7 @@ class IslandLayer(object):
 
             self._current_island = None
 
-    def clean_up(self, base_layer: BaseLayer):
+    def clean_up(self, base_layer: BaseLayer) -> None:
         """
         Ensure that final islands are a minimum size.
         Islands under the threshold have their tiles turned into water.

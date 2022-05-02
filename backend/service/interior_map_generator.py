@@ -11,7 +11,7 @@ class InteriorMapGenerator(object):
     Procedurally generates square-based interior maps composed of rooms and events.
     """
     def __init__(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int,
-                 min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int):
+                 min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int) -> None:
         self.pixel_width: int = pixel_width
         self.pixel_height: int = pixel_height
         self.cell_size: int = cell_size
@@ -27,9 +27,9 @@ class InteriorMapGenerator(object):
 
         self.debug_render()
 
-    def generate(self):
+    def generate(self) -> str:
         print(' -> Serializing')
-        # self.serialize()
+        return self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {}
@@ -37,7 +37,7 @@ class InteriorMapGenerator(object):
         string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
         return string
 
-    def debug_render(self):
+    def debug_render(self) -> None:
         import pygame
         from pygame import freetype
 

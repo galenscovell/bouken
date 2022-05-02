@@ -17,9 +17,7 @@ class RegionLayer(object):
     Defines region layer of a map, detailing the political regions on it.
     Interactions directly with this object deal with the Regions dict, its primary data.
     """
-    def __init__(self, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int,
-                 min_region_size_pct: float, total_map_size: int, elevation_modifier: float,
-                 dryness_modifier: float):
+    def __init__(self, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float, total_map_size: int, elevation_modifier: float, dryness_modifier: float) -> None:
         self._min_region_expansions: int = min_region_expansions
         self._max_region_expansions: int = max_region_expansions
         self._min_region_size: int = int(min_region_size_pct * total_map_size)
@@ -41,7 +39,7 @@ class RegionLayer(object):
     def __len__(self) -> int:
         return len(self._region_key_to_region)
 
-    def __setitem__(self, id_key: int, value: Region):
+    def __setitem__(self, id_key: int, value: Region) -> None:
         self._region_key_to_region[id_key] = value
 
     def __getitem__(self, id_key: int) -> Optional[Region]:
@@ -49,7 +47,7 @@ class RegionLayer(object):
             return self._region_key_to_region[id_key]
         return None
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         if key in self._region_key_to_region:
             del self._region_key_to_region[key]
 
@@ -59,7 +57,7 @@ class RegionLayer(object):
     def values(self) -> List[Region]:
         return list(self._region_key_to_region.values())
 
-    def debug_render(self, surface: pygame.Surface):
+    def debug_render(self, surface: pygame.Surface) -> None:
         for region_key in self.keys():
             region: Region = self[region_key]
             if region.base_color != (0, 0, 0):
@@ -121,7 +119,7 @@ class RegionLayer(object):
                 return False
         return True
 
-    def expand(self):
+    def expand(self) -> None:
         """
         Expand region's area outward until it can no longer expand.
         """
@@ -134,7 +132,7 @@ class RegionLayer(object):
 
             self._current_region = None
 
-    def _refresh_regions(self):
+    def _refresh_regions(self) -> None:
         """
         Refresh details for each region.
         """
@@ -146,7 +144,7 @@ class RegionLayer(object):
             region.set_exterior_details()
             region.set_geographic_details(self._elevation_modifier, self._dryness_modifier)
 
-    def establish_regions_to_merge(self):
+    def establish_regions_to_merge(self) -> None:
         """
         Determine which regions ought to be merged to reach an appropriate size.
         """
@@ -181,7 +179,7 @@ class RegionLayer(object):
             return True
         return False
 
-    def remove_stray_regions(self, island_layer: IslandLayer):
+    def remove_stray_regions(self, island_layer: IslandLayer) -> None:
         """
         Remove any regions composed of less than 6 hexes post-merge.
         """

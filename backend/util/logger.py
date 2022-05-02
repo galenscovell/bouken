@@ -16,14 +16,14 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def info(msg):
+def info(msg) -> None:
     """
     Write info message.
     """
     logger.info(msg)
 
 
-def warn(msg, ex=None):
+def warn(msg, ex=None) -> None:
     """
     Write warning message (with stacktrace if exception is passed).
     """
@@ -32,7 +32,7 @@ def warn(msg, ex=None):
     logger.warning(msg)
 
 
-def error(msg, ex=None):
+def error(msg, ex=None) -> None:
     """
     Write error message (with stacktrace if exception is passed).
     """
@@ -41,5 +41,5 @@ def error(msg, ex=None):
     logger.error(msg)
 
 
-def _format_traceback(e):
+def _format_traceback(e) -> str:
     return ''.join(traceback.format_tb(e.__traceback__)).strip()

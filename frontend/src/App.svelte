@@ -3,29 +3,29 @@
 	import axios, { type AxiosResponse } from 'axios';
 
 	let response: string;
-	let name: string = 'world';
 	let error: unknown = null;
 
-	onMount(async () => {
+	async function generateExteriorMap() {
 		try {
-			const res: AxiosResponse = await axios.get('http://localhost:5050/status',{
-				headers: {
-
-				},
+			const res: AxiosResponse = await axios.post('http://localhost:5050/generate',{
+				headers: {},
 				params: {}
 			});
-			response = res.data.status
+			response = res.data.map_str
 		} catch (e: unknown) {
 			error = e
 		}
-	});
+	}
 </script>
 
-<h1>Hello {name}!</h1>
+<h1>Bouken Map Generator</h1>
+<button on:click="{() => generateExteriorMap()}">Generate Exterior</button>
 <div>
 	{#if response}
-		<p>API Status: {response}</p>
+		<p>Exterior Map JSON string: {response}</p>
+	{:else if error}
+		<p>Error encountered: {error}</p>
 	{:else}
-		<p>Hitting API...</p>
+		<p>Waiting to hit API</p>
 	{/if}
 </div>
