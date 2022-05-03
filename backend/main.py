@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
+from backend.model.requests import ExteriorGenerateRequest
 from backend.model.responses import StatusResponse
 from backend.service.exterior_map_generator import ExteriorMapGenerator
 from backend.service.interior_map_generator import InteriorMapGenerator
@@ -27,8 +28,8 @@ from backend.util.logger import Logger
 
 _log: Logger = Logger()
 _db_service: SqliteService = None
-_exterior_map_generator: ExteriorMapGenerator = ExteriorMapGenerator()
-_interior_map_generator: InteriorMapGenerator = InteriorMapGenerator()
+_exterior_map_generator: ExteriorMapGenerator = ExteriorMapGenerator(_log)
+_interior_map_generator: InteriorMapGenerator = InteriorMapGenerator(_log)
 
 
 app = FastAPI(
@@ -75,13 +76,13 @@ async def status(db=Depends(db_dependency)) -> JSONResponse:
 
 
 @app.post(
-    path='/generate',
+    path='/generate/exterior',
     response_model=StatusResponse,
     status_code=HTTP_200_OK,
-    summary='Create map',
-    description='Generate a new map'
+    summary='Generate an exterior map',
+    description='Generate an exterior map'
 )
-async def create(db=Depends(db_dependency)) -> JSONResponse:
+async def create(req: ExteriorGenerateRequest, db=Depends(db_dependency)) -> JSONResponse:
     try:
         # interior_map: str = _interior_map_generator.begin(
         #     pixel_width=900,
@@ -94,17 +95,17 @@ async def create(db=Depends(db_dependency)) -> JSONResponse:
         #     max_corridor_length=6,
         # )
         exterior_map: str = _exterior_map_generator.begin(
-            pixel_width=900,
-            hex_size=10,
-            initial_land_pct=0.3,
-            required_land_pct=0.4,
-            terraform_iterations=20,
-            min_island_size=12,
-            humidity=Humidity.Average,
-            temperature=Temperature.Temperate,
-            min_region_expansions=2,
-            max_region_expansions=5,
-            min_region_size_pct=0.0125
+            req.pixel_width,
+            req.hex_size,
+            req.initial_land_pct,
+            req.required_land_pct,
+            req.terraform_iterations,
+            req.min_island_size,
+            req.humidity,
+            req.temperature,
+            req.min_region_expansions,
+            req.max_region_expansions,
+            req.min_region_size_pct
         )
         return _generate_response(200, {'map_str': exterior_map})
     except Exception as ex:

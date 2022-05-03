@@ -4,23 +4,24 @@ Handles all logging for service.
 
 import colorlog
 import logging.handlers
-import sys
 import traceback
 import uvicorn
 
 
-class Logger(object):
+class Logger:
     def __init__(self) -> None:
-        self.logger = logging.getLogger('Primary')
-        self.logger.setLevel(logging.DEBUG)
-
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(logging.DEBUG)
-
-        formatter = colorlog.ColoredFormatter('%(log_color)s [%(asctime)s] %(levelname)s [%(filename)s.%(funcName)s:%(lineno)d] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        handler = colorlog.StreamHandler()
+        formatter = colorlog.ColoredFormatter('%(log_color)s [%(asctime)s] (%(levelname)s) %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         handler.setFormatter(formatter)
-        
+
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(handler)
+
+        for logger in uvicorn.config.LOGGING_CONFIG['loggers']:
+            uvicorn_logger = logging.getLogger(logger)
+            uvicorn_logger.handlers.clear()
+            uvicorn_logger.propagate = True
 
 
     def info(self, msg) -> None:

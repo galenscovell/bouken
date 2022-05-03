@@ -12,12 +12,17 @@ from backend.state.temperature import Temperature
 from backend.util.biome_calculator import BiomeCalculator
 from backend.util.compact_json_encoder import CompactJsonEncoder
 from backend.util.constants import background_color, update_rate, frame_rate
+from backend.util.logger import Logger
 
 
 class ExteriorMapGenerator:
     """
     Procedurally generates hexagon-based exterior maps composed of land features and regions.
     """
+    def __init__(self, logger: Logger) -> None:
+        self.logger: Logger = logger
+    
+
     def begin(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float, terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float) -> str:
         # Biome
         self.temperature: Temperature = temperature
@@ -57,7 +62,7 @@ class ExteriorMapGenerator:
     def generate(self) -> str:
         acceptable: bool = False
         while not acceptable:
-            print(' -> Terraforming')
+            self.logger.info('Exterior -> Terraforming')
             for n in range(self.terraform_iterations):
                 self.base_layer.terraform()
             self.base_layer.finalize()
@@ -66,7 +71,7 @@ class ExteriorMapGenerator:
             if not acceptable:
                 self.base_layer.randomize()
 
-        print(' -> Discovering islands')
+        self.logger.info('Exterior -> Discovering islands')
         self.island_layer = IslandLayer(self.base_layer, self.min_island_size)
 
         running: bool = True
@@ -74,36 +79,33 @@ class ExteriorMapGenerator:
             running = self.island_layer.discover()
         self.island_layer.clean_up(self.base_layer)
 
-        print(' -> Calculating geographic details')
-        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions,
-                                              self.min_lakes, self.max_lakes)
+        self.logger.info('Exterior -> Calculating geographic details')
+        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
 
         running = True
         while running:
             running = self.geography_layer.place_freshwater()
         self.geography_layer.finalize()
 
-        print(' -> Generating regions')
-        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions,
-                                        self.min_region_size_pct, self.base_layer.total_usable_hexes(),
-                                        self.elevation_modifier, self.dryness_modifier)
+        self.logger.info('Exterior -> Generating regions')
+        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier)
 
         running = True
         while running:
             running = self.region_layer.discover(self.island_layer)
         self.region_layer.establish_regions_to_merge()
 
-        print(' -> Merging regions')
+        self.logger.info('Exterior -> Merging regions')
         running = True
         while running:
             running = self.region_layer.merge(self.island_layer)
         self.region_layer.remove_stray_regions(self.island_layer)
 
-        print(' -> Generating features and events')
+        self.logger.info('Exterior -> Generating features and events')
         self.feature_layer = FeatureLayer(self.region_layer)
         self.feature_layer.construct()
 
-        print(' -> Serializing')
+        self.logger.info('Exterior -> Serializing')
         return self.serialize()
 
     def serialize(self) -> str:
@@ -116,8 +118,7 @@ class ExteriorMapGenerator:
             'hexes': self.base_layer.serialize()
         }
 
-        string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
-        return string
+        return json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
 
     def debug_save(self) -> None:
         import pygame
@@ -186,20 +187,14 @@ class ExteriorMapGenerator:
                     processing: bool = self.island_layer.discover()
                     if not processing:
                         self.island_layer.clean_up(self.base_layer)
-                        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions,
-                                                              self.max_lake_expansions, self.min_lakes,
-                                                              self.max_lakes)
+                        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
                         island_filling = False
                         placing_freshwater = True
                 elif placing_freshwater:
                     processing: bool = self.geography_layer.place_freshwater()
                     if not processing:
                         self.geography_layer.finalize()
-                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions,
-                                                        self.max_region_expansions,
-                                                        self.min_region_size_pct,
-                                                        self.base_layer.total_usable_hexes(),
-                                                        self.elevation_modifier, self.dryness_modifier)
+                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier)
 
                         placing_freshwater = False
                         region_filling = True

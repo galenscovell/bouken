@@ -4,12 +4,17 @@ import sys
 from backend.processing.interior.interior import Interior
 from backend.util.compact_json_encoder import CompactJsonEncoder
 from backend.util.constants import frame_rate, update_rate, background_color
+from backend.util.logger import Logger
 
 
 class InteriorMapGenerator(object):
     """
     Procedurally generates square-based interior maps composed of rooms and events.
     """
+    def __init__(self, logger: Logger) -> None:
+        self.logger: Logger = logger
+
+
     def begin(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int, min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int) -> None:
         self.pixel_width: int = pixel_width
         self.pixel_height: int = pixel_height
@@ -25,14 +30,13 @@ class InteriorMapGenerator(object):
         # self.debug_render()
 
     def generate(self) -> str:
-        print(' -> Serializing')
+        self.logger.info('Interior -> Serializing')
         return self.serialize()
 
     def serialize(self) -> str:
         serialized: dict = {}
 
-        string: str = json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
-        return string
+        return json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
 
     def debug_render(self) -> None:
         import pygame
@@ -41,7 +45,6 @@ class InteriorMapGenerator(object):
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.pixel_width, self.pixel_height))
         pygame.display.set_caption('Bouken Interior Map Debug')
-        font = freetype.Font('res/source-code-pro.ttf', 12)
 
         clock = pygame.time.Clock()
         surface.fill(background_color)
