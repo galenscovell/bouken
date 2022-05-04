@@ -36,19 +36,37 @@
 	}
 </script>
 
+<div id=header_container>
+
+</div>
+
 <div id=root_container>
-	<div id=about_site_container></div>
-	<div id=about_creator_container></div>
-	<div id=generate_container></div>
-	<h1>Bouken Map Generator</h1>
-	<button on:click="{() => generateExteriorMap()}">Generate Exterior</button>
-	<div>
-		{#if exteriorMapData}
-			<p>{exteriorMapData}</p>
-		{:else if exteriorGenerationError}
-			<p>Error encountered: {exteriorGenerationError}</p>
-		{:else}
-			<p>Waiting to hit API...</p>
-		{/if}
+	<div id=left_root_container>
+		<div id=about_site_container>
+			<div class=vertical_sub_box></div>
+			<div class=vertical_sub_box></div>
+			<div class=vertical_sub_box></div>
+			<div class=vertical_sub_box></div>
+		</div>
 	</div>
+	
+	<div id=right_root_container>
+		<div id=generate_container>
+			<button on:click="{() => generateExteriorMap()}">Generate Exterior</button>
+			<div>
+				{#if exteriorMapData}
+					<p>{exteriorMapData}</p>
+				{:else if exteriorGenerationError}
+					<p>Error encountered: {exteriorGenerationError}</p>
+				{:else}
+					<p>Waiting to hit API...</p>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<div id=footer_container>
+
 </div>
