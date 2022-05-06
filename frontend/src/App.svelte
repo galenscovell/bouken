@@ -1,27 +1,39 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import axios, { type AxiosResponse } from 'axios';
 	import { Humidity, Temperature } from './enums';
 
-	let exteriorMapData: string;
-	let exteriorGenerationError: unknown = null;
-	let exteriorGenerationRequest = JSON.stringify({
-		'pixel_width': 900,
-		'hex_size': 10,
-		'initial_land_pct': 0.3,
-		'required_land_pct': 0.4,
-		'terraform_iterations': 20,
-		'min_island_size': 12,
-		'humidity': Humidity.Average,
-		'temperature': Temperature.Temperate,
-		'min_region_expansions': 2,
-		'max_region_expansions': 5,
-		'min_region_size_pct': 0.0125
-	})
+	let pixelWidth: number = 640;
+	let hexSize: number = 8;
+	let initialLandPct: number = 30;
+	let requiredLandPct: number = 40;
+	let terraformIterations: number = 20;
+	let minIslandSize: number = 12;
+	let humidity: string = "Barren";
+	let temperature: string = "Freezing";
+	let minRegionExpands: number = 2;
+	let maxRegionExpands: number = 5;
+	let minRegionSizePct: number = 1.25;
 
 	async function generateExteriorMap() {
+		let exteriorMapData: string;
+		let exteriorGenerationError: unknown = null;
+		let exteriorGenerationRequest = {
+			'pixel_width': pixelWidth,
+			'hex_size': hexSize,
+			'initial_land_pct': initialLandPct / 100,
+			'required_land_pct': requiredLandPct / 100,
+			'terraform_iterations':terraformIterations,
+			'min_island_size': minIslandSize,
+			'humidity': Humidity[humidity as keyof typeof Humidity],
+			'temperature': Temperature[temperature as keyof typeof Temperature],
+			'min_region_expansions': minRegionExpands,
+			'max_region_expansions': maxRegionExpands,
+			'min_region_size_pct': minRegionSizePct / 100
+		};
+
+		console.log(exteriorGenerationRequest);
 		await axios.post('http://localhost:5050/generate/exterior',
-			exteriorGenerationRequest, {
+			JSON.stringify(exteriorGenerationRequest), {
 				headers: {'Content-Type': 'application/json'},
 				params: {}
 		})
@@ -62,63 +74,51 @@
 	
 	<div id=right_container class="box-shadow center">
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="pixelWidthLabel">Pixel Width</label>
-				<input id="pixelWidthRange" type="range" min="128" max="1280" step="128" value="640" oninput="pixelWidth.value=pixelWidthRange.value" />
+				<input bind:value={pixelWidth} id="pixelWidthRange" type="range" min="128" max="1280" step="128" oninput="pixelWidth.value=pixelWidthRange.value" />
 				<output id="pixelWidth" for="pixelWidthRange">640</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="hexSizeLabel">Hex Size</label>
-				<input id="hexSizeRange" type="range" min="2" max="16" step="1" value="8" oninput="hexSize.value=hexSizeRange.value" />
+				<input bind:value={hexSize} id="hexSizeRange" type="range" min="2" max="16" step="1" oninput="hexSize.value=hexSizeRange.value" />
 				<output id="hexSize" for="hexSizeRange">8</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="initialLandPctLabel">Initial Land Percentage</label>
-				<input id="initialLandPctRange" type="range" min="0" max="100" step="1" value="30" oninput="initialLandPct.value=initialLandPctRange.value" />
+				<input bind:value={initialLandPct} id="initialLandPctRange" type="range" min="0" max="90" step="1" oninput="initialLandPct.value=initialLandPctRange.value" />
 				<output id="initialLandPct" for="initialLandPctRange">30</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="requiredLandPctLabel">Required Land Percentage</label>
-				<input id="requiredLandPctRange" type="range" min="0" max="100" step="1" value="40" oninput="requiredLandPct.value=requiredLandPctRange.value" />
+				<input bind:value={requiredLandPct} id="requiredLandPctRange" type="range" min="0" max="90" step="1" oninput="requiredLandPct.value=requiredLandPctRange.value" />
 				<output id="requiredLandPct" for="requiredLandPctRange">40</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="terraformIterationsLabel">Terraform Iterations</label>
-				<input id="terraformIterationsRange" type="range" min="1" max="32" step="1" value="20" oninput="terraformIterations.value=terraformIterationsRange.value" />
+				<input bind:value={terraformIterations} id="terraformIterationsRange" type="range" min="1" max="32" step="1" oninput="terraformIterations.value=terraformIterationsRange.value" />
 				<output id="terraformIterations" for="terraformIterationsRange">20</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="minIslandSizeLabel">Minimum Island Hex Size</label>
-				<input id="minIslandSizeRange" type="range" min="4" max="32" step="1" value="12" oninput="minIslandSize.value=minIslandSizeRange.value" />
+				<input bind:value={minIslandSize} id="minIslandSizeRange" type="range" min="4" max="32" step="1" oninput="minIslandSize.value=minIslandSizeRange.value" />
 				<output id="minIslandSize" for="minIslandSizeRange">12</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
-				<label for="temperature">Temperature</label>
-				<select name="Temperature">
-					<option value="Freezing">Freezing</option>
-					<option value="Cold">Cold</option>
-					<option value="Temperate">Temperate</option>
-					<option value="Warm">Warm</option>
-					<option value="Hot">Hot</option>
-				</select>
-			</div>
-		</div>
-		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="humidity">Humidity</label>
-				<select id="humidity" name="Humidity">
+				<select bind:value={humidity} id="humidity" name="Humidity">
 					<option value="Barren">Barren</option>
 					<option value="Dry">Dry</option>
 					<option value="Average">Average</option>
@@ -128,23 +128,35 @@
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
+				<label for="temperature">Temperature</label>
+				<select bind:value={temperature} name="Temperature">
+					<option value="Freezing">Freezing</option>
+					<option value="Cold">Cold</option>
+					<option value="Temperate">Temperate</option>
+					<option value="Warm">Warm</option>
+					<option value="Hot">Hot</option>
+				</select>
+			</div>
+		</div>
+		<div class="vertical_sub_container center">
+			<div class="generate_input box-shadow">
 				<label for="minRegionExpandsLabel">Minimum Region Expansions</label>
-				<input id="minRegionExpandsRange" type="range" min="1" max="6" step="1" value="2" oninput="minRegionExpands.value=minRegionExpandsRange.value" />
+				<input bind:value={minRegionExpands} id="minRegionExpandsRange" type="range" min="1" max="5" step="1" oninput="minRegionExpands.value=minRegionExpandsRange.value" />
 				<output id="minRegionExpands" for="minRegionExpandsRange">2</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="maxRegionExpandsLabel">Maximum Region Expansions</label>
-				<input id="maxRegionExpandsRange" type="range" min="1" max="12" step="1" value="5" oninput="maxRegionExpands.value=maxRegionExpandsRange.value" />
+				<input bind:value={maxRegionExpands} id="maxRegionExpandsRange" type="range" min="1" max="10" step="1" oninput="maxRegionExpands.value=maxRegionExpandsRange.value" />
 				<output id="maxRegionExpands" for="maxRegionExpandsRange">5</output>
 			</div>
 		</div>
 		<div class="vertical_sub_container center">
-			<div class="generate_input">
+			<div class="generate_input box-shadow">
 				<label for="minRegionSizePctLabel">Minimum Region Size Percentage</label>
-				<input id="minRegionSizePctRange" type="range" min="0" max="5" step="0.25" value="1.25" oninput="minRegionSizePct.value=minRegionSizePctRange.value" />
+				<input bind:value={minRegionSizePct} id="minRegionSizePctRange" type="range" min="0" max="6" step="0.25" oninput="minRegionSizePct.value=minRegionSizePctRange.value" />
 				<output id="minRegionSizePct" for="minRegionSizePctRange">1.25</output>
 			</div>
 		</div>

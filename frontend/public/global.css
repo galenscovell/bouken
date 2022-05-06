@@ -76,8 +76,8 @@ body {
 	display: flex;
 	flex-direction: column;
 	height: 65vh;
-	flex-grow: 5;
-	padding: 16px;
+	flex-grow: 4;
+	padding: 10px;
 	background-color: var(--light-purple);
 }
 
@@ -86,10 +86,13 @@ body {
 	align-items: center;
 	flex-direction: row;
 	width: 100%;
+	background-color: var(--green);
+	color: #f3f3f3;
+	padding: 4px 8px;
 }
 
 .generate_input label {
-	width: 50%;
+	width: 60%;
 }
 
 .generate_input input {
@@ -100,11 +103,15 @@ body {
 	width: 45%;
 }
 
+.generate_input output {
+	min-width: 36px;
+}
+
 
 .vertical_sub_container {
 	display: flex;
 	height: 15vh;
-	width: 80%;
+	width: 90%;
 	gap: 24px;
 }
 
@@ -122,8 +129,8 @@ body {
 }
 
 .box-shadow {
-	box-shadow: 5px 5px 1px rgba(0, 0, 0, 0.2);
-	border-radius: 3px;
+	box-shadow: 4px 6px 0px rgba(0, 0, 0, 0.1);
+	border-radius: 4px;
 }
 
 .center {
@@ -133,12 +140,12 @@ body {
 
 .button {
 	position: relative;
+	opacity: 0.7;
 	top: 0px;
 	background-color: var(--gold);
-	opacity: 0.9;
 	color: var(--black);
 	width: 80%;
-	height: 100%;
+	height: 46px;
 	border: none;
 	font-size: 24px;
 }
@@ -148,6 +155,6 @@ body {
 }
 
 .button:active {
-	top: 2px;
-	box-shadow: 1px 3px 4px rgba(0, 0, 0, 0.2);
+	top: 3px;
+	box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.2);
 }
