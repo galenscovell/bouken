@@ -8,10 +8,10 @@ from shapely.ops import unary_union
 from backend.processing.exterior.hex import Hex
 from backend.state.biome import Biome
 from backend.state.terraform import Terraform
-from backend.util.biome_calculator import BiomeCalculator
+from backend.util.i_biome_calculator import IBiomeCalculator
 
 
-class Region(object):
+class Region:
     """
     Defines a region of a map, composed of multiple hexes.
     """
@@ -132,7 +132,7 @@ class Region(object):
 
                     self.exterior_hexes.add(h)
 
-    def set_geographic_details(self, elevation_modifier: float, dryness_modifier: float) -> None:
+    def set_geographic_details(self, elevation_modifier: float, dryness_modifier: float, biome_calculator: IBiomeCalculator) -> None:
         """
         Find this region's exterior hexes and its overall status geographically.
         """
@@ -169,5 +169,5 @@ class Region(object):
         elif self.avg_dryness < 0:
             self.avg_dryness = 0
 
-        self.biome = BiomeCalculator.determine_biome(self.avg_elevation, self.avg_dryness)
-        self.base_color = BiomeCalculator.get_biome_base_color(self.biome)
+        self.biome = biome_calculator.pick_biome(self.avg_elevation, self.avg_dryness)
+        self.base_color = biome_calculator.find_biome_color(self.biome)

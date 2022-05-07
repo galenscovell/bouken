@@ -3,7 +3,7 @@ from typing import List, Tuple
 from backend.state.construction import Construction
 
 
-class Cell(object):
+class Cell:
     def __init__(self, uid: int, x: int, y: int, size: int) -> None:
         self.uid: int = uid
         self.x: int = x
@@ -12,9 +12,7 @@ class Cell(object):
         self.box: Tuple[int, int, int, int] = (self.x * self.size, self.y * self.size, self.size, self.size)
 
         self._state: Construction = Construction.Empty
-        self._state_options: List[Construction] = [Construction.Floor, Construction.Wall,
-                                                   Construction.Empty, Construction.Padding,
-                                                   Construction.Corridor, Construction.Corner, Construction.Water]
+        self._state_options: List[Construction] = [Construction.Floor, Construction.Wall, Construction.Empty, Construction.Padding, Construction.Corridor, Construction.Corner, Construction.Water]
 
         self.room_id: int = -1
         self._in_room: bool = False

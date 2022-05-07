@@ -6,7 +6,7 @@ from shapely.ops import unary_union
 from backend.processing.exterior.hex import Hex
 
 
-class Island(object):
+class Island:
     """
     Defines an island of a map, composed of multiple hexes.
     """

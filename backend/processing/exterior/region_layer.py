@@ -7,17 +7,22 @@ from backend.processing.exterior.hex import Hex
 from backend.processing.exterior.island import Island
 from backend.processing.exterior.island_layer import IslandLayer
 from backend.processing.exterior.region import Region
+from backend.util.i_biome_calculator import IBiomeCalculator
+from backend.util.i_hex_utility import IHexUtility
+
 from backend.state.terraform import Terraform
+
 from backend.util.constants import text_color
-from backend.util.hex_utils import HexUtils
 
 
-class RegionLayer(object):
+class RegionLayer:
     """
     Defines region layer of a map, detailing the political regions on it.
     Interactions directly with this object deal with the Regions dict, its primary data.
     """
-    def __init__(self, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float, total_map_size: int, elevation_modifier: float, dryness_modifier: float) -> None:
+    def __init__(self, biome_calculator: IBiomeCalculator, hex_util: IHexUtility, island_layer: IslandLayer, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float, total_map_size: int, elevation_modifier: float, dryness_modifier: float) -> None:
+        self.biome_calculator: IBiomeCalculator = biome_calculator
+        self.hex_util: IHexUtility = hex_util
         self._min_region_expansions: int = min_region_expansions
         self._max_region_expansions: int = max_region_expansions
         self._min_region_size: int = int(min_region_size_pct * total_map_size)
@@ -142,7 +147,7 @@ class RegionLayer(object):
         for region_key in self.keys():
             region: Region = self[region_key]
             region.set_exterior_details()
-            region.set_geographic_details(self._elevation_modifier, self._dryness_modifier)
+            region.set_geographic_details(self._elevation_modifier, self._dryness_modifier, self.biome_calculator)
 
     def establish_regions_to_merge(self) -> None:
         """
@@ -207,5 +212,5 @@ class RegionLayer(object):
                 h.set_lake()
             else:
                 h.set_ocean()
-            depth: float = HexUtils.distance(h, [Terraform.Land])
+            depth: float = self.hex_util.distance(h, [Terraform.Land])
             h.depth = depth

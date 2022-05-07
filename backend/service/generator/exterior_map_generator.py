@@ -7,28 +7,43 @@ from backend.processing.exterior.feature_layer import FeatureLayer
 from backend.processing.exterior.geography_layer import GeographyLayer
 from backend.processing.exterior.island_layer import IslandLayer
 from backend.processing.exterior.region_layer import RegionLayer
+from backend.service.generator.i_map_generator import IMapGenerator
+from backend.util.compact_json_encoder import CompactJsonEncoder
+from backend.util.i_biome_calculator import IBiomeCalculator
+from backend.util.i_hex_utility import IHexUtility
+from backend.util.i_logger import ILogger
+
 from backend.state.humidity import Humidity
 from backend.state.temperature import Temperature
-from backend.util.biome_calculator import BiomeCalculator
-from backend.util.compact_json_encoder import CompactJsonEncoder
+
 from backend.util.constants import background_color, update_rate, frame_rate
-from backend.util.logger import Logger
 
 
-class ExteriorMapGenerator:
+class ExteriorMapGenerator(IMapGenerator):
     """
     Procedurally generates hexagon-based exterior maps composed of land features and regions.
     """
-    def __init__(self, logger: Logger) -> None:
-        self.logger: Logger = logger
-    
+    def __init__(self, logger: ILogger, biome_calculator: IBiomeCalculator, hex_util: IHexUtility) -> None:
+        self.logger: ILogger = logger
+        self.biome_calculator: IBiomeCalculator = biome_calculator
+        self.hex_util: IHexUtility = hex_util
 
-    def begin(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float, terraform_iterations: int, min_island_size: int, humidity: Humidity, temperature: Temperature, min_region_expansions: int, max_region_expansions: int, min_region_size_pct: float) -> str:
+    def instantiate(self,
+                    pixel_width: int,
+                    hex_size: int,
+                    initial_land_pct: float,
+                    required_land_pct: float,
+                    terraform_iterations: int,
+                    min_island_size: int,
+                    humidity: Humidity,
+                    temperature: Temperature,
+                    min_region_expansions: int,
+                    max_region_expansions: int,
+                    min_region_size_pct: float) -> str:
         # Biome
         self.temperature: Temperature = temperature
         self.humidity: Humidity = humidity
-        self.elevation_modifier, self.dryness_modifier, self.min_lakes, self.max_lakes, self.min_lake_expansions, \
-            self.max_lake_expansions = BiomeCalculator.calculate_climate_modifiers(temperature, humidity)
+        self.elevation_modifier, self.dryness_modifier, self.min_lakes, self.max_lakes, self.min_lake_expansions, self.max_lake_expansions = self.biome_calculator.calc_climate_modifiers(temperature, humidity)
 
         # Base parameters
         self.pixel_width: int = pixel_width
@@ -38,7 +53,13 @@ class ExteriorMapGenerator:
         self.initial_land_pct: float = initial_land_pct
         self.required_land_pct: float = required_land_pct
         self.terraform_iterations: int = terraform_iterations
-        self.base_layer: BaseLayer = BaseLayer(self.pixel_width, self.hex_diameter, self.initial_land_pct, self.required_land_pct, False)
+        self.base_layer: BaseLayer = BaseLayer(
+            self.hex_util,
+            self.pixel_width,
+            self.hex_diameter,
+            self.initial_land_pct,
+            self.required_land_pct,
+            False)
 
         # Island parameters
         self.min_island_size: int = min_island_size
@@ -80,7 +101,13 @@ class ExteriorMapGenerator:
         self.island_layer.clean_up(self.base_layer)
 
         self.logger.info('Exterior -> Calculating geographic details')
-        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
+        self.geography_layer = GeographyLayer(
+            self.hex_util,
+            self.base_layer,
+            self.min_lake_expansions,
+            self.max_lake_expansions,
+            self.min_lakes,
+            self.max_lakes)
 
         running = True
         while running:
@@ -88,7 +115,15 @@ class ExteriorMapGenerator:
         self.geography_layer.finalize()
 
         self.logger.info('Exterior -> Generating regions')
-        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier)
+        self.region_layer = RegionLayer(
+            self.island_layer,
+            self.min_region_expansions,
+            self.max_region_expansions,
+            self.min_region_size_pct,
+            self.base_layer.total_usable_hexes(),
+            self.elevation_modifier,
+            self.dryness_modifier,
+            self.biome_calculator)
 
         running = True
         while running:
@@ -170,14 +205,14 @@ class ExteriorMapGenerator:
                     processing: bool = self.island_layer.discover()
                     if not processing:
                         self.island_layer.clean_up(self.base_layer)
-                        self.geography_layer = GeographyLayer(self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
+                        self.geography_layer = GeographyLayer(self.hex_util, self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
                         island_filling = False
                         placing_freshwater = True
                 elif placing_freshwater:
                     processing: bool = self.geography_layer.place_freshwater()
                     if not processing:
                         self.geography_layer.finalize()
-                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier)
+                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier, self.biome_calculator)
 
                         placing_freshwater = False
                         region_filling = True

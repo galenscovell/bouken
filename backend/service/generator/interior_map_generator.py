@@ -2,20 +2,29 @@ import json
 import sys
 
 from backend.processing.interior.interior import Interior
+from backend.service.generator.i_map_generator import IMapGenerator
 from backend.util.compact_json_encoder import CompactJsonEncoder
+from backend.util.i_logger import ILogger
+
 from backend.util.constants import frame_rate, update_rate, background_color
-from backend.util.logger import Logger
 
 
-class InteriorMapGenerator(object):
+class InteriorMapGenerator(IMapGenerator):
     """
     Procedurally generates square-based interior maps composed of rooms and events.
     """
-    def __init__(self, logger: Logger) -> None:
-        self.logger: Logger = logger
+    def __init__(self, logger: ILogger) -> None:
+        self.logger: ILogger = logger
 
-
-    def begin(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int, min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int) -> None:
+    def instantiate(self,
+                    pixel_width: int,
+                    pixel_height: int,
+                    cell_size: int,
+                    number_rooms: int,
+                    min_room_size: int,
+                    max_room_size: int,
+                    min_corridor_length: int,
+                    max_corridor_length: int) -> None:
         self.pixel_width: int = pixel_width
         self.pixel_height: int = pixel_height
         self.cell_size: int = cell_size
@@ -25,9 +34,15 @@ class InteriorMapGenerator(object):
         self.min_corridor_length: int = min_corridor_length
         self.max_corridor_length: int = max_corridor_length
 
-        self.interior: Interior = Interior(self.pixel_width, self.pixel_height, self.cell_size, self.number_rooms, self.min_room_size, self.max_room_size, self.min_corridor_length, self.max_corridor_length)
-
-        # self.debug_render()
+        self.interior: Interior = Interior(
+            self.pixel_width,
+            self.pixel_height,
+            self.cell_size,
+            self.number_rooms,
+            self.min_room_size,
+            self.max_room_size,
+            self.min_corridor_length,
+            self.max_corridor_length)
 
     def generate(self) -> str:
         self.logger.info('Interior -> Serializing')
@@ -40,7 +55,6 @@ class InteriorMapGenerator(object):
 
     def debug_render(self) -> None:
         import pygame
-        from pygame import freetype
 
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.pixel_width, self.pixel_height))

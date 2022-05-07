@@ -1,18 +1,20 @@
+import pygame
+
+from pygame import freetype
 from random import Random
 from typing import Dict, Tuple, List
 
-import pygame
-from pygame import freetype
-
 from backend.processing.exterior.region_layer import RegionLayer
 from backend.processing.exterior.region import Region
+
 from backend.state.biome import Biome
 from backend.state.landform import Landform
 from backend.state.structure import Structure
+
 from backend.util.constants import text_color
 
 
-class FeatureLayer(object):
+class FeatureLayer:
     """
     Defines feature layer of a map, detailing its landscape features and events.
     """

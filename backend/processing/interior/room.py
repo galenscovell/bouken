@@ -4,9 +4,8 @@ from backend.processing.interior.cell import Cell
 from backend.processing.interior.corridor import Corridor
 
 
-class Room(object):
-    def __init__(self, room_id: int, center_cell: Cell, width: int, height: int,
-                 room_cells: List[Cell], perimeter: List[Cell], corners: List[Cell]) -> None:
+class Room:
+    def __init__(self, room_id: int, center_cell: Cell, width: int, height: int, room_cells: List[Cell], perimeter: List[Cell], corners: List[Cell]) -> None:
         self.room_id: int = room_id
         self.center_cell: Cell = center_cell
         self.width: int = width

@@ -5,7 +5,7 @@ from typing import List, Tuple
 from backend.state.terraform import Terraform
 
 
-class Hex(object):
+class Hex:
     """
     Defines a single hexagon cell.
     """
@@ -31,9 +31,12 @@ class Hex(object):
         self._on_island: bool = False
         self._in_region: bool = False
 
-        self._state_options: List[Terraform] = [Terraform.Land, Terraform.Coast,
-                                                Terraform.Ocean, Terraform.Lake,
-                                                Terraform.River]
+        self._state_options: List[Terraform] = [
+            Terraform.Land,
+            Terraform.Coast,
+            Terraform.Ocean,
+            Terraform.Lake,
+            Terraform.River]
 
         self.island_id: int = -1
         self.region_id: int = -1

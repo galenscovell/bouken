@@ -1,16 +1,18 @@
 import math
 import random
-from typing import List, Optional, Tuple, Set
-
 import pygame
 
+from typing import List, Optional, Tuple, Set
+
 from backend.processing.exterior.hex import Hex
+from backend.util.i_hex_utility import IHexUtility
+
 from backend.state.terraform import Terraform
+
 from backend.util.constants import dryness_color, freshwater_color
-from backend.util.hex_utils import HexUtils
 
 
-class BaseLayer(object):
+class BaseLayer:
     """
     The base layer of the map, describing its basic land features.
 
@@ -18,14 +20,21 @@ class BaseLayer(object):
     Hexes can be either pointy or flat topped - calculations will shift accordingly.
     Allows for both indexed set/get and generator looping of all hexes.
     """
-    def __init__(self, pixel_width: int, hex_size: int, initial_land_pct: float, required_land_pct: float, pointy: bool = True) -> None:
+    def __init__(self,
+                hex_util: IHexUtility,
+                pixel_width: int,
+                hex_size: int,
+                initial_land_pct: float,
+                required_land_pct: float,
+                pointy: bool = True) -> None:
+        self.hex_util: IHexUtility = hex_util
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
         self.initial_land_pct: float = initial_land_pct
         self.required_land_pct: float = required_land_pct
 
         width_diameter, height_diameter, horizontal_spacing, vertical_spacing = \
-            HexUtils.calculate_layout(hex_size, pointy)
+            self.hex_util.calculate_layout(hex_size, pointy)
 
         self._columns: int = int(self._pixel_width // (width_diameter / 2))
         self._rows: int = int(self._pixel_height // (height_diameter / 2))
@@ -70,15 +79,14 @@ class BaseLayer(object):
         # Set hex properties
         for h in self.generator():
             h.construct(width_diameter, height_diameter, horizontal_spacing, vertical_spacing)
-            h.vertices = HexUtils.calculate_hex_corners(h.pixel_center_x, h.pixel_center_y, hex_size, pointy)
+            h.vertices = self.hex_util.calculate_hex_corners(h.pixel_center_x, h.pixel_center_y, hex_size, pointy)
 
         self._random: random.Random = random.Random()
 
         self.actual_width: int = round(horizontal_spacing / 2 + horizontal_spacing * self._columns)
         self.actual_height: int = round(vertical_spacing + vertical_spacing * self._rows)
 
-        # Set max possible distance cap. Smaller divisor (larger value) = finer gradient and lower extremes.
-        HexUtils.MAX_DISTANCE = (self._columns * self._rows) / 200
+        self.hex_util.set_max_distance((self._columns * self._rows) / 200)
 
         self.randomize()
 
@@ -105,16 +113,6 @@ class BaseLayer(object):
         for h in self.generator():
             if h.is_land() or h.is_coast():
                 pygame.draw.polygon(surface, dryness_color, h.vertices)
-                # elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
-                # pygame.draw.polygon(surface, elevation_color, h.vertices)
-                # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
-                # pygame.draw.polygon(surface, dryness_color, h.vertices)
-            # elif h.is_ocean():
-            #     h_color = [(c - (h.depth * c)) for c in ocean_color]
-            #     for i in range(len(h_color)):
-            #         if h_color[i] > 255:
-            #             h_color[i] = 255
-            #     pygame.draw.polygon(surface, h_color, h.vertices)
             else:
                 h_color = [(c - (h.depth * c)) for c in freshwater_color]
                 for i in range(len(h_color)):

@@ -18,18 +18,25 @@ from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from backend.model.requests import ExteriorGenerateRequest
 from backend.model.responses import StatusResponse
-from backend.service.exterior_map_generator import ExteriorMapGenerator
-from backend.service.interior_map_generator import InteriorMapGenerator
-from backend.service.sqlite_service import SqliteService
-from backend.state.humidity import Humidity
-from backend.state.temperature import Temperature
+from backend.service.database.i_db_service import IDbService
+from backend.service.database.sqlite_service import SqliteService
+from backend.service.generator.i_map_generator import IMapGenerator
+from backend.service.generator.exterior_map_generator import ExteriorMapGenerator
+from backend.service.generator.interior_map_generator import InteriorMapGenerator
+from backend.util.i_biome_calculator import IBiomeCalculator
+from backend.util.biome_calculator import BiomeCalculator
+from backend.util.i_hex_utility import IHexUtility
+from backend.util.hex_utils import HexUtils
+from backend.util.i_logger import ILogger
 from backend.util.logger import Logger
 
 
-_log: Logger = Logger()
-_db_service: SqliteService = SqliteService()
-_exterior_map_generator: ExteriorMapGenerator = ExteriorMapGenerator(_log)
-_interior_map_generator: InteriorMapGenerator = InteriorMapGenerator(_log)
+_log: ILogger = Logger()
+_biome_calculator: IBiomeCalculator = BiomeCalculator()
+_db_service: IDbService = SqliteService(_log)
+_hex_util: IHexUtility = HexUtils()
+_exterior_map_generator: IMapGenerator = ExteriorMapGenerator(_log, _biome_calculator, _hex_util)
+_interior_map_generator: IMapGenerator = InteriorMapGenerator(_log)
 
 
 app = FastAPI(
@@ -47,7 +54,7 @@ app.add_middleware(
 )
 
 
-def db_dependency() -> SqliteService:
+def db_dependency() -> IDbService:
     global _db_service
     if not _db_service:
         _db_service = None
@@ -94,7 +101,7 @@ async def create(req: ExteriorGenerateRequest, db=Depends(db_dependency)) -> JSO
         #     min_corridor_length=2,
         #     max_corridor_length=6,
         # )
-        exterior_map: str = _exterior_map_generator.begin(
+        exterior_map: str = _exterior_map_generator.instantiate(
             req.pixel_width,
             req.hex_size,
             req.initial_land_pct,

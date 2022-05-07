@@ -3,15 +3,17 @@ from typing import List, Set, Tuple, Optional
 
 from backend.processing.exterior.hex import Hex
 from backend.processing.exterior.base_layer import BaseLayer
+from backend.util.i_hex_utility import IHexUtility
+
 from backend.state.terraform import Terraform
-from backend.util.hex_utils import HexUtils
 
 
-class GeographyLayer(object):
+class GeographyLayer:
     """
     Defines geographic qualities of map (elevation, depth, dryness, freshwater).
     """
-    def __init__(self, base_layer: BaseLayer, min_lake_expansions: int, max_lake_expansions: int, min_lake_amount: int, max_lake_amount: int) -> None:
+    def __init__(self, hex_util: IHexUtility, base_layer: BaseLayer, min_lake_expansions: int, max_lake_expansions: int, min_lake_amount: int, max_lake_amount: int) -> None:
+        self.hex_util: IHexUtility = hex_util
         self._min_lake_expansions: int = min_lake_expansions
         self._max_lake_expansions: int = max_lake_expansions
 
@@ -148,10 +150,10 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                ocean_elevation: float = HexUtils.distance(h, [Terraform.Ocean])
+                ocean_elevation: float = self.hex_util.distance(h, [Terraform.Ocean])
                 elevation: float = ocean_elevation
                 if include_freshwater and self._made_lakes > 0:
-                    freshwater_elevation: float = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
+                    freshwater_elevation: float = self.hex_util.distance(h, [Terraform.Lake, Terraform.River])
                     elevation = (ocean_elevation * 0.6) + (freshwater_elevation * 0.4)
 
                 h.elevation = elevation
@@ -165,11 +167,11 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_land() or h.is_coast():
-                ocean_distance: float = HexUtils.distance(h, [Terraform.Ocean])
+                ocean_distance: float = self.hex_util.distance(h, [Terraform.Ocean])
                 if self._made_lakes > 0:
-                    freshwater_distance = HexUtils.distance(h, [Terraform.Lake, Terraform.River])
+                    freshwater_distance = self.hex_util.distance(h, [Terraform.Lake, Terraform.River])
                 else:
-                    freshwater_distance = HexUtils.normalize(HexUtils.MAX_DISTANCE)
+                    freshwater_distance = self.hex_util.normalize(self.hex_util.get_max_distance())
 
                 h.dryness = (freshwater_distance * 0.8) + (ocean_distance * 0.2)
             else:
@@ -182,6 +184,6 @@ class GeographyLayer(object):
         """
         for h in self.base_layer.generator():
             if h.is_ocean() or h.is_lake() or h.is_river():
-                h.depth = HexUtils.distance(h, [Terraform.Land])
+                h.depth = self.hex_util.distance(h, [Terraform.Land])
             else:
                 h.depth = 0

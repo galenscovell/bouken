@@ -3,14 +3,14 @@ from typing import Tuple
 from backend.state.biome import Biome
 from backend.state.humidity import Humidity
 from backend.state.temperature import Temperature
-from backend.util.constants import tropical_desert_color, tropical_forest_color, temperate_desert_color, \
-    temperate_forest_color, grassland_color, taiga_color, bare_color, tundra_color, snow_color
+from backend.util.i_biome_calculator import IBiomeCalculator
+
+from backend.util.constants import tropical_desert_color, tropical_forest_color, temperate_desert_color, temperate_forest_color, grassland_color, taiga_color, bare_color, tundra_color, snow_color
 
 
-class BiomeCalculator(object):
-    @staticmethod
-    def calculate_climate_modifiers(temperature: Temperature, humidity: Humidity) \
-            -> Tuple[float, float, int, int, int, int]:
+class BiomeCalculator(IBiomeCalculator):
+    """Primary implementation of Biome Calculator."""
+    def calc_climate_modifiers(self,temperature: Temperature, humidity: Humidity) -> Tuple[float, float, int, int, int, int]:
         elevation_modifier: float = 0
         if temperature == Temperature.Freezing:
             elevation_modifier += 0.5
@@ -52,8 +52,7 @@ class BiomeCalculator(object):
 
         return elevation_modifier, dryness_modifier, min_lake_expansions, max_lake_amount, min_lake_amount, max_lake_amount
 
-    @staticmethod
-    def determine_biome(elevation: float, dryness: float) -> Biome:
+    def pick_biome(self, elevation: float, dryness: float) -> Biome:
         elevation *= 4
         dryness *= 6
 
@@ -110,8 +109,7 @@ class BiomeCalculator(object):
             else:
                 return Biome.TropicalForest
 
-    @staticmethod
-    def get_biome_base_color(biome: Biome) -> Tuple[int, int, int]:
+    def find_biome_color(self, biome: Biome) -> Tuple[int, int, int]:
         if biome == Biome.TropicalDesert:
             return tropical_desert_color
         elif biome == Biome.TropicalForest:

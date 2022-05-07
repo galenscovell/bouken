@@ -1,7 +1,3 @@
-"""
-Interacts with core SQLite DB.
-"""
-
 import hashlib
 import json
 import os
@@ -13,12 +9,14 @@ from typing import List, Optional
 from backend.model.exterior_map import ExteriorMap
 from backend.model.interior_map import InteriorMap
 from backend.model.user import User
-from backend.util.logger import Logger
+from backend.service.database.i_db_service import IDbService
+from backend.util.i_logger import ILogger
 
 
-class SqliteService:
-    def __init__(self, logger: Logger) -> None:
-        self.logger: Logger = logger
+class SqliteService(IDbService):
+    """SQLite implementation of database service."""
+    def __init__(self, logger: ILogger) -> None:
+        self.logger: ILogger = logger
         self.db_file = os.path.join(os.getcwd(), 'data', 'bouken.db')
 
     @staticmethod
