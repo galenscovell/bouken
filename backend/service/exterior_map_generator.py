@@ -120,23 +120,6 @@ class ExteriorMapGenerator:
 
         return json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
 
-    def debug_save(self) -> None:
-        import pygame
-        from pygame import freetype
-
-        pygame.init()
-        surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
-        pygame.display.set_caption('Bouken Map Generation Debug')
-        font = freetype.Font('source-code-pro.ttf', 12)
-
-        self.base_layer.debug_render(surface)
-        self.region_layer.debug_render(surface)
-        self.feature_layer.debug_render(surface, font)
-
-        pygame.image.save(surface, f'sample_output/{self.temperature.name}_{self.humidity.name}.jpg')
-
-        pygame.quit()
-
     def debug_render(self) -> None:
         import pygame
         from pygame import freetype

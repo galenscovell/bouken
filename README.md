@@ -10,7 +10,7 @@ All operations performed in `backend` directory.
 1. `python -m venv .venv` to create virtual env (if not already done)
 2. `.venv/Scripts/activate` to activate venv (`deactivate` to deactivate)
 3. `pip install -r requirements.txt` (if not already done)
-4. Run: `uvicorn main:app --host 0.0.0.0 --port 5050`
+4. Run: `uvicorn main:app --host 0.0.0.0 --port 5050 --reload`
 5. Access documentation at either http://localhost:5050/docs (Swagger) or http://localhost:5050/redoc (Redoc)
 6. Access service at http://localhost:5050
 

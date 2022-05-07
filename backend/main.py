@@ -27,7 +27,7 @@ from backend.util.logger import Logger
 
 
 _log: Logger = Logger()
-_db_service: SqliteService = None
+_db_service: SqliteService = SqliteService()
 _exterior_map_generator: ExteriorMapGenerator = ExteriorMapGenerator(_log)
 _interior_map_generator: InteriorMapGenerator = InteriorMapGenerator(_log)
 
