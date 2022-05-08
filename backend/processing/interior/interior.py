@@ -3,15 +3,23 @@ import pygame
 from random import Random
 from typing import Tuple, Optional, List, Dict, Set
 
-from backend.processing.interior.cell import Cell
-from backend.processing.interior.corridor import Corridor
-from backend.processing.interior.room import Room
+from processing.interior.cell import Cell
+from processing.interior.corridor import Corridor
+from processing.interior.room import Room
 
-from backend.util.constants import tropical_forest_color, background_color, tropical_desert_color, taiga_color, bare_color
+from util.constants import tropical_forest_color, background_color, tropical_desert_color, taiga_color, bare_color
 
 
 class Interior:
-    def __init__(self, pixel_width: int, pixel_height: int, cell_size: int, number_rooms: int, min_room_size: int, max_room_size: int, min_corridor_length: int, max_corridor_length: int) -> None:
+    def __init__(self,
+                 pixel_width: int,
+                 pixel_height: int,
+                 cell_size: int,
+                 number_rooms: int,
+                 min_room_size: int,
+                 max_room_size: int,
+                 min_corridor_length: int,
+                 max_corridor_length: int) -> None:
         self._cell_size: int = cell_size
         self._number_rooms: int = number_rooms
 

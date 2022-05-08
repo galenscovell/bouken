@@ -1,12 +1,14 @@
 import json
 import sys
 
-from backend.processing.interior.interior import Interior
-from backend.service.generator.i_map_generator import IMapGenerator
-from backend.util.compact_json_encoder import CompactJsonEncoder
-from backend.util.i_logger import ILogger
+from typing import Optional
 
-from backend.util.constants import frame_rate, update_rate, background_color
+from processing.interior.interior import Interior
+from service.generator.i_map_generator import IMapGenerator
+from util.compact_json_encoder import CompactJsonEncoder
+from util.i_logger import ILogger
+
+from util.constants import frame_rate, update_rate, background_color
 
 
 class InteriorMapGenerator(IMapGenerator):
@@ -15,6 +17,16 @@ class InteriorMapGenerator(IMapGenerator):
     """
     def __init__(self, logger: ILogger) -> None:
         self.logger: ILogger = logger
+
+        self.pixel_width: int = 0
+        self.pixel_height: int = 0
+        self.cell_size: int = 0
+        self.number_rooms: int = 0
+        self.min_room_size: int = 0
+        self.max_room_size: int = 0
+        self.min_corridor_length: int = 0
+        self.max_corridor_length: int = 0
+        self.interior: Optional[Interior] = None
 
     def instantiate(self,
                     pixel_width: int,
@@ -25,16 +37,16 @@ class InteriorMapGenerator(IMapGenerator):
                     max_room_size: int,
                     min_corridor_length: int,
                     max_corridor_length: int) -> None:
-        self.pixel_width: int = pixel_width
-        self.pixel_height: int = pixel_height
-        self.cell_size: int = cell_size
-        self.number_rooms: int = number_rooms
-        self.min_room_size: int = min_room_size
-        self.max_room_size: int = max_room_size
-        self.min_corridor_length: int = min_corridor_length
-        self.max_corridor_length: int = max_corridor_length
+        self.pixel_width = pixel_width
+        self.pixel_height = pixel_height
+        self.cell_size = cell_size
+        self.number_rooms = number_rooms
+        self.min_room_size = min_room_size
+        self.max_room_size = max_room_size
+        self.min_corridor_length = min_corridor_length
+        self.max_corridor_length = max_corridor_length
 
-        self.interior: Interior = Interior(
+        self.interior = Interior(
             self.pixel_width,
             self.pixel_height,
             self.cell_size,

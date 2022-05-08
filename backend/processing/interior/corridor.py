@@ -1,6 +1,6 @@
 from typing import List
 
-from backend.processing.interior.cell import Cell
+from processing.interior.cell import Cell
 
 
 class Corridor:

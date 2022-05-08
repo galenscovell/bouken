@@ -1,4 +1,4 @@
-from backend.state.pathfinding import Pathfinding
+from state.pathfinding import Pathfinding
 
 
 background_color = (52, 73, 94)

@@ -1,59 +1,60 @@
 import json
 import sys
-from typing import Optional
+from typing import Optional, Tuple
 
-from backend.processing.exterior.base_layer import BaseLayer
-from backend.processing.exterior.feature_layer import FeatureLayer
-from backend.processing.exterior.geography_layer import GeographyLayer
-from backend.processing.exterior.island_layer import IslandLayer
-from backend.processing.exterior.region_layer import RegionLayer
-from backend.service.generator.i_map_generator import IMapGenerator
-from backend.util.compact_json_encoder import CompactJsonEncoder
-from backend.util.i_biome_calculator import IBiomeCalculator
-from backend.util.i_hex_utility import IHexUtility
-from backend.util.i_logger import ILogger
+from model.requests import CreateExteriorRequest
+from processing.exterior.base_layer import BaseLayer
+from processing.exterior.feature_layer import FeatureLayer
+from processing.exterior.geography_layer import GeographyLayer
+from processing.exterior.island_layer import IslandLayer
+from processing.exterior.region_layer import RegionLayer
+from service.generator.i_map_generator import IMapGenerator
+from util.compact_json_encoder import CompactJsonEncoder
+from util.i_biome_calculator import IBiomeCalculator
+from util.i_hex_utility import IHexUtility
+from util.i_logger import ILogger
 
-from backend.state.humidity import Humidity
-from backend.state.temperature import Temperature
+from state.humidity import Humidity
+from state.temperature import Temperature
 
-from backend.util.constants import background_color, update_rate, frame_rate
+from util.constants import background_color, update_rate, frame_rate
 
 
 class ExteriorMapGenerator(IMapGenerator):
     """
     Procedurally generates hexagon-based exterior maps composed of land features and regions.
     """
-    def __init__(self, logger: ILogger, biome_calculator: IBiomeCalculator, hex_util: IHexUtility) -> None:
+    def __init__(self,
+                 logger: ILogger,
+                 biome_calculator: IBiomeCalculator,
+                 hex_util: IHexUtility,
+                 gen_request: CreateExteriorRequest) -> None:
         self.logger: ILogger = logger
         self.biome_calculator: IBiomeCalculator = biome_calculator
         self.hex_util: IHexUtility = hex_util
 
-    def instantiate(self,
-                    pixel_width: int,
-                    hex_size: int,
-                    initial_land_pct: float,
-                    required_land_pct: float,
-                    terraform_iterations: int,
-                    min_island_size: int,
-                    humidity: Humidity,
-                    temperature: Temperature,
-                    min_region_expansions: int,
-                    max_region_expansions: int,
-                    min_region_size_pct: float) -> str:
         # Biome
-        self.temperature: Temperature = temperature
-        self.humidity: Humidity = humidity
-        self.elevation_modifier, self.dryness_modifier, self.min_lakes, self.max_lakes, self.min_lake_expansions, self.max_lake_expansions = self.biome_calculator.calc_climate_modifiers(temperature, humidity)
+        self.temperature: Temperature = gen_request.temperature
+        self.humidity: Humidity = gen_request.humidity
+
+        climate_modifiers: Tuple[float, float, int, int, int, int] = \
+            self.biome_calculator.calc_climate_modifiers(self.temperature, self.humidity)
+        self.elevation_modifier: float = climate_modifiers[0]
+        self.dryness_modifier: float = climate_modifiers[1]
+        self.min_lakes: int = climate_modifiers[2]
+        self.max_lakes: int = climate_modifiers[3]
+        self.min_lake_expansions: int = climate_modifiers[4]
+        self.max_lake_expansions: int = climate_modifiers[5]
 
         # Base parameters
-        self.pixel_width: int = pixel_width
-        self.hex_diameter: int = hex_size
+        self.pixel_width: int = gen_request.pixel_width
+        self.hex_diameter: int = gen_request.hex_size
 
         # Terraform parameters
-        self.initial_land_pct: float = initial_land_pct
-        self.required_land_pct: float = required_land_pct
-        self.terraform_iterations: int = terraform_iterations
-        self.base_layer: BaseLayer = BaseLayer(
+        self.initial_land_pct: float = gen_request.initial_land_pct
+        self.required_land_pct: float = gen_request.required_land_pct
+        self.terraform_iterations: int = gen_request.terraform_iterations
+        self.base_layer: Optional[BaseLayer] = BaseLayer(
             self.hex_util,
             self.pixel_width,
             self.hex_diameter,
@@ -62,23 +63,20 @@ class ExteriorMapGenerator(IMapGenerator):
             False)
 
         # Island parameters
-        self.min_island_size: int = min_island_size
+        self.min_island_size: int = gen_request.min_island_size
         self.island_layer: Optional[IslandLayer] = None
 
         # Geography parameters
         self.geography_layer: Optional[GeographyLayer] = None
 
         # Region parameters
-        self.min_region_expansions: int = min_region_expansions
-        self.max_region_expansions: int = max_region_expansions
-        self.min_region_size_pct: float = min_region_size_pct
-        self.region_layer: Optional[RegionLayer] = None
+        self.min_region_expansions: int = gen_request.min_region_expansions
+        self.max_region_expansions: int = gen_request.max_region_expansions
+        self.min_region_size_pct: float = gen_request.min_region_size_pct
+        self.region_layer = None
 
         # Feature parameters
         self.feature_layer: Optional[FeatureLayer] = None
-
-        return self.generate()
-
 
     def generate(self) -> str:
         acceptable: bool = False
@@ -116,14 +114,15 @@ class ExteriorMapGenerator(IMapGenerator):
 
         self.logger.info('Exterior -> Generating regions')
         self.region_layer = RegionLayer(
+            self.biome_calculator,
+            self.hex_util,
             self.island_layer,
             self.min_region_expansions,
             self.max_region_expansions,
             self.min_region_size_pct,
             self.base_layer.total_usable_hexes(),
             self.elevation_modifier,
-            self.dryness_modifier,
-            self.biome_calculator)
+            self.dryness_modifier)
 
         running = True
         while running:
@@ -157,12 +156,10 @@ class ExteriorMapGenerator(IMapGenerator):
 
     def debug_render(self) -> None:
         import pygame
-        from pygame import freetype
 
         pygame.init()
         surface: pygame.Surface = pygame.display.set_mode((self.base_layer.actual_width, self.base_layer.actual_height))
         pygame.display.set_caption('Bouken Exterior Map Debug')
-        font = freetype.Font('source-code-pro.ttf', 12)
 
         clock = pygame.time.Clock()
         surface.fill(background_color)
@@ -205,14 +202,29 @@ class ExteriorMapGenerator(IMapGenerator):
                     processing: bool = self.island_layer.discover()
                     if not processing:
                         self.island_layer.clean_up(self.base_layer)
-                        self.geography_layer = GeographyLayer(self.hex_util, self.base_layer, self.min_lake_expansions, self.max_lake_expansions, self.min_lakes, self.max_lakes)
+                        self.geography_layer = GeographyLayer(
+                            self.hex_util,
+                            self.base_layer,
+                            self.min_lake_expansions,
+                            self.max_lake_expansions,
+                            self.min_lakes,
+                            self.max_lakes)
                         island_filling = False
                         placing_freshwater = True
                 elif placing_freshwater:
                     processing: bool = self.geography_layer.place_freshwater()
                     if not processing:
                         self.geography_layer.finalize()
-                        self.region_layer = RegionLayer(self.island_layer, self.min_region_expansions, self.max_region_expansions, self.min_region_size_pct, self.base_layer.total_usable_hexes(), self.elevation_modifier, self.dryness_modifier, self.biome_calculator)
+                        self.region_layer = RegionLayer(
+                            self.biome_calculator,
+                            self.hex_util,
+                            self.island_layer,
+                            self.min_region_expansions,
+                            self.max_region_expansions,
+                            self.min_region_size_pct,
+                            self.base_layer.total_usable_hexes(),
+                            self.elevation_modifier,
+                            self.dryness_modifier)
 
                         placing_freshwater = False
                         region_filling = True
@@ -242,7 +254,6 @@ class ExteriorMapGenerator(IMapGenerator):
             else:
                 self.base_layer.debug_render(surface)
                 self.region_layer.debug_render(surface)
-                self.feature_layer.debug_render(surface, font)
 
             pygame.display.flip()
             clock.tick(frame_rate)

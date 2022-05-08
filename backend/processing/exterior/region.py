@@ -5,10 +5,10 @@ from typing import List, Tuple, Set
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
 
-from backend.processing.exterior.hex import Hex
-from backend.state.biome import Biome
-from backend.state.terraform import Terraform
-from backend.util.i_biome_calculator import IBiomeCalculator
+from processing.exterior.hex import Hex
+from state.biome import Biome
+from state.terraform import Terraform
+from util.i_biome_calculator import IBiomeCalculator
 
 
 class Region:

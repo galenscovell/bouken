@@ -3,7 +3,7 @@ import logging.handlers
 import traceback
 import uvicorn
 
-from backend.util.i_logger import ILogger
+from util.i_logger import ILogger
 
 
 class Logger(ILogger):
@@ -22,22 +22,18 @@ class Logger(ILogger):
             uvicorn_logger.handlers.clear()
             uvicorn_logger.propagate = True
 
-
     def info(self, msg) -> None:
         self.logger.info(msg)
-
 
     def warn(self, msg, ex=None) -> None:
         if ex:
             msg.update({'exception': Logger._format_traceback(ex)})
         self.logger.warning(msg)
 
-
     def error(self, msg, ex=None) -> None:
         if ex:
             msg.update({'exception': Logger._format_traceback(ex)})
         self.logger.error(msg)
-
 
     @staticmethod
     def _format_traceback(e) -> str:

@@ -1,11 +1,11 @@
 from typing import Tuple
 
-from backend.state.biome import Biome
-from backend.state.humidity import Humidity
-from backend.state.temperature import Temperature
-from backend.util.i_biome_calculator import IBiomeCalculator
+from state.biome import Biome
+from state.humidity import Humidity
+from state.temperature import Temperature
+from util.i_biome_calculator import IBiomeCalculator
 
-from backend.util.constants import tropical_desert_color, tropical_forest_color, temperate_desert_color, temperate_forest_color, grassland_color, taiga_color, bare_color, tundra_color, snow_color
+from util.constants import tropical_desert_color, tropical_forest_color, temperate_desert_color, temperate_forest_color, grassland_color, taiga_color, bare_color, tundra_color, snow_color
 
 
 class BiomeCalculator(IBiomeCalculator):

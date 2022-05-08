@@ -1,8 +1,8 @@
 from typing import Tuple
 
-from backend.state.biome import Biome
-from backend.state.humidity import Humidity
-from backend.state.temperature import Temperature
+from state.biome import Biome
+from state.humidity import Humidity
+from state.temperature import Temperature
 
 
 class IBiomeCalculator:

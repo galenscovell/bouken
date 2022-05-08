@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from backend.state.construction import Construction
+from state.construction import Construction
 
 
 class Cell:

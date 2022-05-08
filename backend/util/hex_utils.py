@@ -1,18 +1,18 @@
 import math
 from typing import List, Tuple, Optional, Set
 
-from backend.processing.exterior.hex import Hex
-from backend.util.i_hex_utility import IHexUtility
+from processing.exterior.hex import Hex
+from util.i_hex_utility import IHexUtility
 
-from backend.state.pathfinding import Pathfinding
-from backend.state.terraform import Terraform
+from state.pathfinding import Pathfinding
+from state.terraform import Terraform
 
-from backend.util.constants import path_find_mode
+from util.constants import path_find_mode
 
 
 class HexUtils(IHexUtility):
     def __init__(self) -> None:
-        super().__init__()
+        self.max_distance: float = 0
         
     def set_max_distance(self, new_value: float) -> None:
         self.max_distance = new_value

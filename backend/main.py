@@ -1,5 +1,5 @@
 """
-Bouken backend API.
+Entrypoint for Bouken API.
 
 @author GalenS <galen.scovell@gmail.com>
 """
@@ -16,28 +16,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
-from backend.model.requests import ExteriorGenerateRequest
-from backend.model.responses import StatusResponse
-from backend.service.database.i_db_service import IDbService
-from backend.service.database.sqlite_service import SqliteService
-from backend.service.generator.i_map_generator import IMapGenerator
-from backend.service.generator.exterior_map_generator import ExteriorMapGenerator
-from backend.service.generator.interior_map_generator import InteriorMapGenerator
-from backend.util.i_biome_calculator import IBiomeCalculator
-from backend.util.biome_calculator import BiomeCalculator
-from backend.util.i_hex_utility import IHexUtility
-from backend.util.hex_utils import HexUtils
-from backend.util.i_logger import ILogger
-from backend.util.logger import Logger
+from model.requests import CreateExteriorRequest, CreateInteriorRequest
+from model.responses import StatusResponse
+from service.cache.i_cache_service import ICacheService
+from service.cache.redis_service import RedisService
+from service.database.i_db_service import IDbService
+from service.database.sqlite_service import SqliteService
+from service.generator.i_map_generator import IMapGenerator
+from service.generator.exterior_map_generator import ExteriorMapGenerator
+from service.generator.interior_map_generator import InteriorMapGenerator
+from util.i_biome_calculator import IBiomeCalculator
+from util.biome_calculator import BiomeCalculator
+from util.i_hex_utility import IHexUtility
+from util.hex_utils import HexUtils
+from util.i_logger import ILogger
+from util.logger import Logger
 
-
-_log: ILogger = Logger()
+_logger: ILogger = Logger()
 _biome_calculator: IBiomeCalculator = BiomeCalculator()
-_db_service: IDbService = SqliteService(_log)
+_cache_service: ICacheService = RedisService(_logger, 'localhost')
+_db_service: IDbService = SqliteService(_logger)
 _hex_util: IHexUtility = HexUtils()
-_exterior_map_generator: IMapGenerator = ExteriorMapGenerator(_log, _biome_calculator, _hex_util)
-_interior_map_generator: IMapGenerator = InteriorMapGenerator(_log)
-
 
 app = FastAPI(
     title='Bouken API',
@@ -52,6 +51,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+def cache_dependency() -> ICacheService:
+    global _cache_service
+    if not _cache_service:
+        _cache_service = None
+    return _cache_service
 
 
 def db_dependency() -> IDbService:
@@ -70,26 +76,66 @@ def _generate_response(status_code: int, contents: dict) -> JSONResponse:
     response_model=StatusResponse,
     status_code=HTTP_200_OK,
     summary='Status',
-    description='Get service status'
+    description='Get service and dependencies status'
 )
-async def status(db=Depends(db_dependency)) -> JSONResponse:
+async def status(cache: ICacheService = Depends(cache_dependency),
+                 db: IDbService = Depends(db_dependency)) -> JSONResponse:
     try:
+        cache.ping()
+        db.ping()
         return _generate_response(200, {'status': 200})
     except Exception as ex:
         msg = {'message': 'Error checking service health'}
-        _log.error(msg, ex)
+        _logger.error(msg, ex)
         msg.update({'exception': ex.__str__()})
         return _generate_response(HTTP_500_INTERNAL_SERVER_ERROR, msg)
 
 
 @app.post(
-    path='/generate/exterior',
+    path='/exterior',
     response_model=StatusResponse,
     status_code=HTTP_200_OK,
     summary='Generate an exterior map',
     description='Generate an exterior map'
 )
-async def create(req: ExteriorGenerateRequest, db=Depends(db_dependency)) -> JSONResponse:
+async def create_exterior(req: CreateExteriorRequest,
+                          cache: ICacheService = Depends(cache_dependency),
+                          db: IDbService = Depends(db_dependency)) -> JSONResponse:
+    try:
+        generator: ExteriorMapGenerator = ExteriorMapGenerator(
+            _logger, _biome_calculator, _hex_util, req)
+        return _generate_response(200, {'map_guid': ''})
+    except Exception as ex:
+        msg = {'message': 'Error generating exterior map'}
+        _logger.error(msg, ex)
+        msg.update({'exception': ex.__str__()})
+        return _generate_response(HTTP_500_INTERNAL_SERVER_ERROR, msg)
+
+
+@app.get(
+    path='/exterior/{user_guid}/{map_guid}',
+    response_model=StatusResponse,
+    status_code=HTTP_200_OK,
+    summary='Get an exterior map',
+    description='Get an exterior map'
+)
+async def get_exterior(user_guid: str,
+                       map_guid: str,
+                       cache: ICacheService = Depends(cache_dependency),
+                       db: IDbService = Depends(db_dependency)) -> JSONResponse:
+    pass
+
+
+@app.post(
+    path='/interior',
+    response_model=StatusResponse,
+    status_code=HTTP_200_OK,
+    summary='Generate an interior map',
+    description='Generate an interior map'
+)
+async def create_interior(req: CreateInteriorRequest,
+                          cache: ICacheService = Depends(cache_dependency),
+                          db: IDbService = Depends(db_dependency)) -> JSONResponse:
     try:
         # interior_map: str = _interior_map_generator.begin(
         #     pixel_width=900,
@@ -101,32 +147,34 @@ async def create(req: ExteriorGenerateRequest, db=Depends(db_dependency)) -> JSO
         #     min_corridor_length=2,
         #     max_corridor_length=6,
         # )
-        exterior_map: str = _exterior_map_generator.instantiate(
-            req.pixel_width,
-            req.hex_size,
-            req.initial_land_pct,
-            req.required_land_pct,
-            req.terraform_iterations,
-            req.min_island_size,
-            req.humidity,
-            req.temperature,
-            req.min_region_expansions,
-            req.max_region_expansions,
-            req.min_region_size_pct
-        )
-        return _generate_response(200, {'map_str': exterior_map})
+        generator: IMapGenerator = InteriorMapGenerator(_logger)
+        return _generate_response(200, {'map_guid': ''})
     except Exception as ex:
-        msg = {'message': 'Error generating map'}
-        _log.error(msg, ex)
+        msg = {'message': 'Error generating interior map'}
+        _logger.error(msg, ex)
         msg.update({'exception': ex.__str__()})
         return _generate_response(HTTP_500_INTERNAL_SERVER_ERROR, msg)
 
 
+@app.get(
+    path='/interior/{user_guid}/{map_guid}',
+    response_model=StatusResponse,
+    status_code=HTTP_200_OK,
+    summary='Get an interior map',
+    description='Get an interior map'
+)
+async def get_interior(user_guid: str,
+                       map_guid: str,
+                       cache: ICacheService = Depends(cache_dependency),
+                       db: IDbService = Depends(db_dependency)) -> JSONResponse:
+    pass
+
+
 @app.on_event('shutdown')
 def shutdown_event() -> None:
-    _log.info('Service shutdown')
+    _logger.info('Service shutdown')
 
 
 @app.on_event('startup')
 def startup_event() -> None:
-    _log.info('Service startup')
+    _logger.info('Service startup')

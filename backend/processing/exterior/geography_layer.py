@@ -1,11 +1,11 @@
 import random
 from typing import List, Set, Tuple, Optional
 
-from backend.processing.exterior.hex import Hex
-from backend.processing.exterior.base_layer import BaseLayer
-from backend.util.i_hex_utility import IHexUtility
+from processing.exterior.hex import Hex
+from processing.exterior.base_layer import BaseLayer
+from util.i_hex_utility import IHexUtility
 
-from backend.state.terraform import Terraform
+from state.terraform import Terraform
 
 
 class GeographyLayer:

@@ -4,12 +4,12 @@ import pygame
 
 from typing import List, Optional, Tuple, Set
 
-from backend.processing.exterior.hex import Hex
-from backend.util.i_hex_utility import IHexUtility
+from processing.exterior.hex import Hex
+from util.i_hex_utility import IHexUtility
 
-from backend.state.terraform import Terraform
+from state.terraform import Terraform
 
-from backend.util.constants import dryness_color, freshwater_color
+from util.constants import dryness_color, freshwater_color
 
 
 class BaseLayer:
@@ -21,12 +21,12 @@ class BaseLayer:
     Allows for both indexed set/get and generator looping of all hexes.
     """
     def __init__(self,
-                hex_util: IHexUtility,
-                pixel_width: int,
-                hex_size: int,
-                initial_land_pct: float,
-                required_land_pct: float,
-                pointy: bool = True) -> None:
+                 hex_util: IHexUtility,
+                 pixel_width: int,
+                 hex_size: int,
+                 initial_land_pct: float,
+                 required_land_pct: float,
+                 pointy: bool = True) -> None:
         self.hex_util: IHexUtility = hex_util
         self._pixel_width: int = pixel_width
         self._pixel_height: int = round(math.sqrt(1 / 3) * self._pixel_width)
@@ -122,7 +122,7 @@ class BaseLayer:
 
     def total_usable_hexes(self) -> int:
         total: int = 0
-        for h in self.generator():
+        for _ in self.generator():
             total += 1
 
         return total

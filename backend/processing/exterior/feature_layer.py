@@ -1,17 +1,12 @@
-import pygame
-
-from pygame import freetype
 from random import Random
-from typing import Dict, Tuple, List
+from typing import Dict, List
 
-from backend.processing.exterior.region_layer import RegionLayer
-from backend.processing.exterior.region import Region
+from processing.exterior.region_layer import RegionLayer
+from processing.exterior.region import Region
 
-from backend.state.biome import Biome
-from backend.state.landform import Landform
-from backend.state.structure import Structure
-
-from backend.util.constants import text_color
+from state.biome import Biome
+from state.landform import Landform
+from state.structure import Structure
 
 
 class FeatureLayer:
@@ -40,11 +35,6 @@ class FeatureLayer:
         }
 
         self.biome_to_base_structure_possibilities: Dict[Biome, Dict[float, Structure]] = {}
-
-    def debug_render(self, surface: pygame.Surface, font: freetype.Font) -> None:
-        for region in self.regions:
-            center: Tuple[int, int] = region.get_centroid()
-            font.render_to(surface, (center[0] - 48, center[1] + 12), str(region.biome.name), text_color)
 
     def construct(self) -> None:
         """

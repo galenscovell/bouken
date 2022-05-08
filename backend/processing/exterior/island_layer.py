@@ -3,11 +3,11 @@ import pygame
 
 from typing import List, Optional, Dict, KeysView, Set
 
-from backend.processing.exterior.hex import Hex
-from backend.processing.exterior.island import Island
-from backend.processing.exterior.base_layer import BaseLayer
+from processing.exterior.hex import Hex
+from processing.exterior.island import Island
+from processing.exterior.base_layer import BaseLayer
 
-from backend.util.constants import island_fill_color
+from util.constants import island_fill_color
 
 
 class IslandLayer:
