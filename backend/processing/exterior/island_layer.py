@@ -1,13 +1,10 @@
 import random
-import pygame
 
 from typing import List, Optional, Dict, KeysView, Set
 
 from processing.exterior.hex import Hex
 from processing.exterior.island import Island
 from processing.exterior.base_layer import BaseLayer
-
-from util.constants import island_fill_color
 
 
 class IslandLayer:
@@ -46,11 +43,6 @@ class IslandLayer:
 
     def values(self) -> List[Island]:
         return list(self._island_key_to_island.values())
-
-    def debug_render(self, surface: pygame.Surface):
-        for island_key in self.keys():
-            island: Island = self._island_key_to_island[island_key]
-            pygame.draw.polygon(surface, island_fill_color, island.get_vertices())
 
     def serialize(self) -> dict:
         island_map: dict = {}

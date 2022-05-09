@@ -1,11 +1,13 @@
+"""
+Constants used throughout backend project.
+"""
+
 from state.pathfinding import Pathfinding
 
 
 background_color = (52, 73, 94)
-
 island_fill_color = (255, 106, 0)
 text_color = (255, 255, 255)
-
 elevation_color = (85, 139, 112)
 dryness_color = (172, 159, 112)
 ocean_color = (54, 54, 97)
@@ -24,4 +26,6 @@ bare_color = (153, 153, 153)
 tundra_color = (221, 221, 187)
 snow_color = (248, 248, 248)
 
-path_find_mode = Pathfinding.Euclidean
+path_find_mode: Pathfinding = Pathfinding.Euclidean
+
+number_of_listeners: int = 4

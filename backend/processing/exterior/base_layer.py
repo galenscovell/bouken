@@ -1,6 +1,5 @@
 import math
 import random
-import pygame
 
 from typing import List, Optional, Tuple, Set
 
@@ -8,8 +7,6 @@ from processing.exterior.hex import Hex
 from util.i_hex_utility import IHexUtility
 
 from state.terraform import Terraform
-
-from util.constants import dryness_color, freshwater_color
 
 
 class BaseLayer:
@@ -108,17 +105,6 @@ class BaseLayer:
             hexes[str(h.uid)] = h.serialize()
 
         return hexes
-
-    def debug_render(self, surface: pygame.Surface) -> None:
-        for h in self.generator():
-            if h.is_land() or h.is_coast():
-                pygame.draw.polygon(surface, dryness_color, h.vertices)
-            else:
-                h_color = [(c - (h.depth * c)) for c in freshwater_color]
-                for i in range(len(h_color)):
-                    if h_color[i] > 255:
-                        h_color[i] = 255
-                pygame.draw.polygon(surface, h_color, h.vertices)
 
     def total_usable_hexes(self) -> int:
         total: int = 0

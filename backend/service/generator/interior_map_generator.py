@@ -1,17 +1,13 @@
 import json
-import sys
 
 from typing import Optional
 
 from processing.interior.interior import Interior
-from service.generator.i_map_generator import IMapGenerator
 from util.compact_json_encoder import CompactJsonEncoder
 from util.i_logger import ILogger
 
-from util.constants import frame_rate, update_rate, background_color
 
-
-class InteriorMapGenerator(IMapGenerator):
+class InteriorMapGenerator:
     """
     Procedurally generates square-based interior maps composed of rooms and events.
     """
@@ -64,40 +60,3 @@ class InteriorMapGenerator(IMapGenerator):
         serialized: dict = {}
 
         return json.dumps(serialized, cls=CompactJsonEncoder, indent=2)
-
-    def debug_render(self) -> None:
-        import pygame
-
-        pygame.init()
-        surface: pygame.Surface = pygame.display.set_mode((self.pixel_width, self.pixel_height))
-        pygame.display.set_caption('Bouken Interior Map Debug')
-
-        clock = pygame.time.Clock()
-        surface.fill(background_color)
-
-        update_tick = 0
-        terraforming = True
-
-        running = True
-        while running:
-            event = pygame.event.poll()
-            if event.type == pygame.QUIT:
-                running = False
-
-            update_tick -= 1
-            if update_tick <= 0:
-                update_tick = update_rate
-
-                if terraforming:
-                    constructing: bool = self.interior.construct()
-                    if not constructing:
-                        self.interior.finalize()
-                        terraforming = False
-
-            self.interior.debug_render(surface)
-
-            pygame.display.flip()
-            clock.tick(frame_rate)
-
-        pygame.quit()
-        sys.exit(0)

@@ -1,13 +1,9 @@
-import pygame
-
 from random import Random
 from typing import Tuple, Optional, List, Dict, Set
 
 from processing.interior.cell import Cell
 from processing.interior.corridor import Corridor
 from processing.interior.room import Room
-
-from util.constants import tropical_forest_color, background_color, tropical_desert_color, taiga_color, bare_color
 
 
 class Interior:
@@ -93,22 +89,6 @@ class Interior:
             cells[str(c.uid)] = c.serialize()
 
         return cells
-
-    def debug_render(self, surface: pygame.Surface) -> None:
-        for c in self.generator():
-            if c.is_floor():
-                pygame.draw.rect(surface, tropical_forest_color, c.box)
-            elif c.is_wall():
-                pygame.draw.rect(surface, taiga_color, c.box)
-            elif c.is_corridor():
-                pygame.draw.rect(surface, tropical_desert_color, c.box)
-            elif c.is_padding():
-                # pygame.draw.rect(surface, snow_color, c.box)
-                continue
-            elif c.is_corner():
-                pygame.draw.rect(surface, bare_color, c.box)
-            else:
-                pygame.draw.rect(surface, background_color, c.box)
 
     def generator(self) -> Optional[Cell]:
         """

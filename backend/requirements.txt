@@ -3,7 +3,9 @@ uvicorn[standard]
 requests
 starlette
 redis
-pygame
 shapely
 colorlog
 pydantic
+google-api-python-client
+google-cloud-pubsub
+google-cloud-firestore
