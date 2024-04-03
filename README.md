@@ -1,18 +1,15 @@
 # Bouken
 
-![Bouken](https://github.com/galenscovell/bouken/blob/master/bouken.png)
-
-![Generation](https://github.com/galenscovell/bouken/blob/master/generation.gif)
+[<img src="https://github.com/galenscovell/bouken/blob/master/bouken.png" width="500"/>](bouken.png)
 
 ### Description
 
 Bouken is (currently) an exterior hexagon map generator that takes into account many features such as humidity, elevation, and landforms to create biomes. Eventually I hope to turn this into an interactive game where the user will control a small party of adventurers across a randomly generated world, complete with creatures, traps, and other events. The idea is for it to play like a simplified version of DND mixed with a boardgame.
 
-![Hi-res Sample](https://github.com/galenscovell/bouken/blob/master/hires-sample.gif)
-
-![Lo-res Sample](https://github.com/galenscovell/bouken/blob/master/lores-sample.gif)
-
-![UI](https://github.com/galenscovell/bouken/blob/master/design/parameters.png)
+[<img src="https://github.com/galenscovell/bouken/blob/master/generation.gif" width="500"/>](generation.gif)
+[<img src="https://github.com/galenscovell/bouken/blob/master/hires-sample.gif" width="500"/>](hires-sample.gif)
+[<img src="https://github.com/galenscovell/bouken/blob/master/lores-sample.gif" width="500"/>](lores-sample.gif)
+[<img src="https://github.com/galenscovell/bouken/blob/master/design/parameters.png" width="500"/>](parameters.png)
 
 ### Usage
 
@@ -40,9 +37,9 @@ All operations performed in `frontend` directory.
 
 ### Design
 
-![MVP Start](https://github.com/galenscovell/bouken/blob/master/design/MVP_1_main.png)
-![MVP Generating](https://github.com/galenscovell/bouken/blob/master/design/MVP_2_generating.png)
-![MVP Generated](https://github.com/galenscovell/bouken/blob/master/design/MVP_3_generated.png)
+[<img src="https://github.com/galenscovell/bouken/blob/master/design/MVP_1_main.png" width="500"/>](MVP_1_main.png)
+[<img src="https://github.com/galenscovell/bouken/blob/master/design/MVP_2_generating.png" width="500"/>](MVP_2_generating.png)
+[<img src="https://github.com/galenscovell/bouken/blob/master/design/MVP_3_generated.png" width="500"/>](MVP_3_generated.png)
 
 ### Issues
 
