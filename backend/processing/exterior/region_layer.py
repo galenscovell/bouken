@@ -1,7 +1,7 @@
 import random
-from typing import List, Optional, Dict, KeysView, Set
-
 import pygame
+
+from typing import List, Optional, Dict, KeysView, Set
 
 from processing.exterior.hex import Hex
 from processing.exterior.island import Island
@@ -223,3 +223,18 @@ class RegionLayer:
                 h.set_ocean()
             depth: float = self.hex_util.distance(h, [Terraform.Land])
             h.depth = depth
+
+    def debug_render(self, surface: pygame.Surface) -> None:
+        for region_key in self.keys():
+            region: Region = self[region_key]
+            if region.base_color != (0, 0, 0):
+                for h in region.hexes:
+                    h_color = [(h.elevation * c * 1.8) for c in region.base_color]
+                    for i in range(len(h_color)):
+                        if h_color[i] > 255:
+                            h_color[i] = 255
+                    pygame.draw.polygon(surface, h_color, h.vertices)
+
+            pygame.draw.polygon(surface, text_color, region.get_vertices(), 2)
+            # pygame.draw.circle(surface, region_center_color, region.get_centroid(), 4)
+            # font.render_to(surface, region.get_centroid(), str(region_key), text_color)

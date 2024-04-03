@@ -21,6 +21,7 @@ class CreateExteriorRequest(BaseModel):
     min_region_expansions: int
     max_region_expansions: int
     min_region_size_pct: float
+    debug: bool = True
 
 
 class CreateInteriorRequest(BaseModel):
@@ -32,3 +33,4 @@ class CreateInteriorRequest(BaseModel):
     max_room_size: int
     min_corridor_length: int
     max_corridor_length: int
+    debug: bool = True

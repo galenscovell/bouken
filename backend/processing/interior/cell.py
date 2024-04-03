@@ -12,7 +12,14 @@ class Cell:
         self.box: Tuple[int, int, int, int] = (self.x * self.size, self.y * self.size, self.size, self.size)
 
         self._state: Construction = Construction.Empty
-        self._state_options: List[Construction] = [Construction.Floor, Construction.Wall, Construction.Empty, Construction.Padding, Construction.Corridor, Construction.Corner, Construction.Water]
+        self._state_options: List[Construction] = [
+            Construction.Floor,
+            Construction.Wall,
+            Construction.Empty,
+            Construction.Padding,
+            Construction.Corridor,
+            Construction.Corner,
+            Construction.Water]
 
         self.room_id: int = -1
         self._in_room: bool = False

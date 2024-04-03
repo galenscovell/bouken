@@ -1,8 +1,20 @@
 # Bouken
 
+![Bouken](https://github.com/galenscovell/bouken/blob/master/bouken.png)
+
 ### Description
 
-Bouken is (currently) an exterior and interior map generator that takes into account many features such as humidity, elevation, and landforms to create biomes and rooms. Eventually I hope to turn this into an interactive game where the user will control a small party of adventurers across a randomly generated world, complete with events, creatures, traps, and other exciting experiences. The idea is for it to play like a simplified version of DND mixed with a boardgame.
+Bouken is (currently) an exterior and interior map generator that takes into account many features such as humidity, elevation, and landforms to create biomes and rooms. Eventually I hope to turn this into an interactive game where the user will control a small party of adventurers across a randomly generated world, complete with creatures, traps, and other events. The idea is for it to play like a simplified version of DND mixed with a boardgame.
+
+![Generation 1](https://github.com/galenscovell/bouken/blob/master/generation-1.gif)
+![Generation 2](https://github.com/galenscovell/bouken/blob/master/generation-2.gif)
+![Generation 3](https://github.com/galenscovell/bouken/blob/master/generation-3.gif)
+
+### Design
+
+![MVP Start](https://github.com/galenscovell/bouken/blob/master/design/MVP_1_main.png)
+![MVP Generating](https://github.com/galenscovell/bouken/blob/master/design/MVP_2_generating.png)
+![MVP Generated](https://github.com/galenscovell/bouken/blob/master/design/MVP_3_generated.png)
 
 ### Running Backend
 

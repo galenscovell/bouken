@@ -1,10 +1,12 @@
 import math
 import random
+import pygame
 
 from typing import List, Optional, Tuple, Set
 
 from processing.exterior.hex import Hex
 from util.i_hex_utility import IHexUtility
+from util.constants import dryness_color, freshwater_color
 
 from state.terraform import Terraform
 
@@ -251,3 +253,24 @@ class BaseLayer:
             for ocean in found_oceans[1:]:
                 for h in ocean:
                     h.set_land()
+
+    def debug_render(self, surface: pygame.Surface) -> None:
+        for h in self.generator():
+            if h.is_land() or h.is_coast():
+                pygame.draw.polygon(surface, dryness_color, h.vertices)
+                # elevation_color = (85 * h.elevation, 139 * h.elevation, 112 * h.elevation)
+                # pygame.draw.polygon(surface, elevation_color, h.vertices)
+                # dryness_color = (172 * h.dryness, 159 * h.dryness, 112 * h.dryness)
+                # pygame.draw.polygon(surface, dryness_color, h.vertices)
+            # elif h.is_ocean():
+            #     h_color = [(c - (h.depth * c)) for c in ocean_color]
+            #     for i in range(len(h_color)):
+            #         if h_color[i] > 255:
+            #             h_color[i] = 255
+            #     pygame.draw.polygon(surface, h_color, h.vertices)
+            else:
+                h_color = [(c - (h.depth * c)) for c in freshwater_color]
+                for i in range(len(h_color)):
+                    if h_color[i] > 255:
+                        h_color[i] = 255
+                pygame.draw.polygon(surface, h_color, h.vertices)

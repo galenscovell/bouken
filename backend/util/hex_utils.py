@@ -13,7 +13,7 @@ from util.constants import path_find_mode
 class HexUtils(IHexUtility):
     def __init__(self) -> None:
         self.max_distance: float = 0
-        
+
     def set_max_distance(self, new_value: float) -> None:
         self.max_distance = new_value
 

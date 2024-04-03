@@ -1,5 +1,8 @@
+import pygame
+
+from pygame import freetype
 from random import Random
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from processing.exterior.region_layer import RegionLayer
 from processing.exterior.region import Region
@@ -7,6 +10,8 @@ from processing.exterior.region import Region
 from state.biome import Biome
 from state.landform import Landform
 from state.structure import Structure
+
+from util.constants import text_color
 
 
 class FeatureLayer:
@@ -152,3 +157,8 @@ class FeatureLayer:
         Add events to each placed feature.
         """
         return
+
+    def debug_render(self, surface: pygame.Surface, font: freetype.Font) -> None:
+        for region in self.regions:
+            center: Tuple[int, int] = region.get_centroid()
+            font.render_to(surface, center, str(region.biome.name), text_color)
