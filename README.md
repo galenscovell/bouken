@@ -2,19 +2,24 @@
 
 ![Bouken](https://github.com/galenscovell/bouken/blob/master/bouken.png)
 
+![Generation](https://github.com/galenscovell/bouken/blob/master/generation.gif)
+
 ### Description
 
-Bouken is (currently) an exterior and interior map generator that takes into account many features such as humidity, elevation, and landforms to create biomes and rooms. Eventually I hope to turn this into an interactive game where the user will control a small party of adventurers across a randomly generated world, complete with creatures, traps, and other events. The idea is for it to play like a simplified version of DND mixed with a boardgame.
+Bouken is (currently) an exterior hexagon map generator that takes into account many features such as humidity, elevation, and landforms to create biomes. Eventually I hope to turn this into an interactive game where the user will control a small party of adventurers across a randomly generated world, complete with creatures, traps, and other events. The idea is for it to play like a simplified version of DND mixed with a boardgame.
 
-![Generation 1](https://github.com/galenscovell/bouken/blob/master/generation-1.gif)
-![Generation 2](https://github.com/galenscovell/bouken/blob/master/generation-2.gif)
-![Generation 3](https://github.com/galenscovell/bouken/blob/master/generation-3.gif)
+![Hi-res Sample](https://github.com/galenscovell/bouken/blob/master/hires-sample.gif)
 
-### Design
+![Lo-res Sample](https://github.com/galenscovell/bouken/blob/master/lores-sample.gif)
 
-![MVP Start](https://github.com/galenscovell/bouken/blob/master/design/MVP_1_main.png)
-![MVP Generating](https://github.com/galenscovell/bouken/blob/master/design/MVP_2_generating.png)
-![MVP Generated](https://github.com/galenscovell/bouken/blob/master/design/MVP_3_generated.png)
+![UI](https://github.com/galenscovell/bouken/blob/master/design/parameters.png)
+
+### Usage
+
+1. Launch Backend and Frontend as described below
+2. Modify parameters using the Frontend UI at http://localhost:8080 and click Generate
+3. Map will generate in realtime in a new window. This is technically debug rendering for troubleshooting, but it looks neat! It will also display additional debug details.
+4. When the window is closed, the complete map (without debug info) will automatically save to `/backend/debug_output` as a jpg image.
 
 ### Running Backend
 
@@ -26,15 +31,6 @@ All operations performed in `backend` directory.
 5. Access documentation at either http://localhost:5050/docs (Swagger) or http://localhost:5050/redoc (Redoc)
 6. Access service at http://localhost:5050
 
-### Running Backend (Docker)
-
-All operations performed in `backend` directory.
-1. (Optional) Prune old builds: `docker image prune`
-2. Build: `docker build -t bouken:latest .`
-3. Run: `docker run -it --rm -p 5050:5050 bouken`
-4. Access documentation at either http://localhost:5050/docs (Swagger) or http://localhost:5050/redoc (Redoc)
-5. Access service at http://localhost:5050
-
 ### Running Frontend
 
 All operations performed in `frontend` directory.
@@ -42,10 +38,12 @@ All operations performed in `frontend` directory.
 2. Run: `npm run dev`
 3. Access site at http://localhost:8080
 
-### Running Frontend (Docker)
+### Design
 
-All operations performed in `frontend` directory.
-1. (Optional) Prune old builds: `docker image prune`
-2. Build: ``
-3. Run: ``
-4. Access site at http://localhost:8080
+![MVP Start](https://github.com/galenscovell/bouken/blob/master/design/MVP_1_main.png)
+![MVP Generating](https://github.com/galenscovell/bouken/blob/master/design/MVP_2_generating.png)
+![MVP Generated](https://github.com/galenscovell/bouken/blob/master/design/MVP_3_generated.png)
+
+### Issues
+
+* The process sometimes gets stuck when placing lakes. It never freezes entirely, but it can sit at this step for quite awhile (minutes, if pixel width is large, hex size is small and map conditions are just right). Will need to figure out a more performant way to handle that logic.

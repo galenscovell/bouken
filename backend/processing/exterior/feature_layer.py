@@ -161,4 +161,4 @@ class FeatureLayer:
     def debug_render(self, surface: pygame.Surface, font: freetype.Font) -> None:
         for region in self.regions:
             center: Tuple[int, int] = region.get_centroid()
-            font.render_to(surface, center, str(region.biome.name), text_color)
+            font.render_to(surface, (center[0] - 48, center[1] + 12), str(region.biome.name), text_color)

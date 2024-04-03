@@ -129,7 +129,7 @@ class ExteriorMapGenerator:
             running = self.island_layer.discover()
         self.island_layer.clean_up(self.base_layer)
 
-        self.logger.info('Exterior -> Calculating geographic details')
+        self.logger.info('Exterior -> Placing geographic details')
         self.geography_layer = GeographyLayer(
             self.hex_util,
             self.base_layer,
@@ -192,8 +192,8 @@ class ExteriorMapGenerator:
         font = freetype.Font('source-code-pro.ttf', 12)
 
         self.base_layer.debug_render(surface)
-        self.region_layer.debug_render(surface)
-        self.feature_layer.debug_render(surface, font)
+        self.region_layer.debug_render(surface, False)
+        # self.feature_layer.debug_render(surface, font)
 
         pygame.image.save(surface, f'debug_output/{self.temperature.name}_{self.humidity.name}.jpg')
         pygame.quit()
@@ -296,10 +296,10 @@ class ExteriorMapGenerator:
                 self.island_layer.debug_render(surface)
             elif region_filling or merging:
                 self.base_layer.debug_render(surface)
-                self.region_layer.debug_render(surface)
+                self.region_layer.debug_render(surface, True)
             else:
                 self.base_layer.debug_render(surface)
-                self.region_layer.debug_render(surface)
+                self.region_layer.debug_render(surface, True)
                 self.feature_layer.debug_render(surface, font)
 
             pygame.display.flip()
